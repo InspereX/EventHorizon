@@ -1,7 +1,11 @@
-﻿using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
+using System.Linq;
+using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Util;
+using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Publishers;
+using Insperex.EventHorizon.EventStreaming.Pulsar.AdvancedFailure;
+using Insperex.EventHorizon.EventStreaming.Pulsar.Utils;
 using Insperex.EventHorizon.EventStreaming.Readers;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Microsoft.Extensions.Logging;
@@ -31,6 +35,13 @@ public class PulsarStreamFactory : IStreamFactory
 
     public ITopicConsumer<T> CreateConsumer<T>(SubscriptionConfig<T> config) where T : class, ITopicMessage, new()
     {
+        if (config.IsMessageOrderGuaranteedOnFailure)
+        {
+            var admin = (PulsarTopicAdmin<T>) CreateAdmin<T>();
+
+            return new OrderGuaranteedPulsarTopicConsumer<T>(_clientResolver, config,
+                this, _loggerFactory, new PulsarAdminKeyHashRangeProvider<T>(admin));
+        }
         return new PulsarTopicConsumer<T>(_clientResolver, config, CreateAdmin<T>());
     }
 
@@ -41,7 +52,7 @@ public class PulsarStreamFactory : IStreamFactory
 
     public ITopicAdmin<T> CreateAdmin<T>() where T : ITopicMessage
     {
-        return new PulsarTopicAdmin<T>(_clientResolver.GetAdminClient(), _attributeUtil, _loggerFactory.CreateLogger<PulsarTopicAdmin<T>>());
+        return new PulsarTopicAdmin<T>(_clientResolver, _attributeUtil, _loggerFactory.CreateLogger<PulsarTopicAdmin<T>>());
     }
 
     public ITopicResolver GetTopicResolver()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Destructurama.Attributed;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
@@ -18,6 +18,10 @@ public class SubscriptionConfig<T> where T : ITopicMessage
     [NotLogged] public DateTime? StartDateTime { get; set; }
 
     [NotLogged] public TimeSpan NoBatchDelay { get; set; }
+
+    [NotLogged] public bool IsMessageOrderGuaranteedOnFailure { get; set; }
+
+    [NotLogged] public BackoffPolicy RetryBackoffPolicy { get; set; }
 
     [NotLogged] public Func<SubscriptionContext<T>, Task> OnBatch { get; set; }
 }

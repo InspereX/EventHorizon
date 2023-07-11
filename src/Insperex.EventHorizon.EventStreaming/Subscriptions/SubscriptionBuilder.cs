@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,6 +21,8 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
     private TimeSpan _noBatchDelay = TimeSpan.FromMilliseconds(200);
     private DateTime? _startDateTime;
     private string _subscriptionName = AssemblyUtil.AssemblyName;
+    private bool _guaranteeMessageOrderOnFailure;
+    private BackoffPolicyBuilder _retryBackoffPolicyBuilder;
     private Func<SubscriptionContext<T>, Task> _onBatch;
     private SubscriptionType _subscriptionType = Abstractions.Models.SubscriptionType.KeyShared;
 
@@ -84,6 +86,19 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
         return this;
     }
 
+    public SubscriptionBuilder<T> GuaranteeMessageOrderOnFailure(bool guarantee)
+    {
+        _guaranteeMessageOrderOnFailure = guarantee;
+        return this;
+    }
+
+    public SubscriptionBuilder<T> RetryBackoffPolicy(Func<BackoffPolicyBuilder, BackoffPolicyBuilder> config)
+    {
+        var builder = new BackoffPolicyBuilder();
+        _retryBackoffPolicyBuilder = config(builder);
+        return this;
+    }
+
     public SubscriptionBuilder<T> OnBatch(Func<SubscriptionContext<T>, Task> onBatch)
     {
         _onBatch = onBatch;
@@ -101,7 +116,9 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
             BatchSize = _batchSize,
             StartDateTime = _startDateTime,
             IsBeginning = _isBeginning,
-            OnBatch = _onBatch
+            IsMessageOrderGuaranteedOnFailure = _guaranteeMessageOrderOnFailure,
+            RetryBackoffPolicy = _retryBackoffPolicyBuilder?.Build(),
+            OnBatch = _onBatch,
         };
         var logger = _loggerFactory.CreateLogger<Subscription<T>>();
 
