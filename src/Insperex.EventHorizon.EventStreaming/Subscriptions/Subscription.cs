@@ -171,8 +171,8 @@ public class Subscription<T> : IAsyncDisposable where T : class, ITopicMessage, 
             // Upgrade Actions
             if (batch?.Any() == true)
             {
-                foreach (var item in batch)
-                    item.Data = item.Data.Upgrade();
+                // foreach (var item in batch)
+                //     item.Data = item.Data.Upgrade();
 
                 _logger.LogInformation("Subscription - Loaded {Type}(s) {Count} in {Duration} {Subscription}",
                     typeof(T).Name, batch.Length, sw.ElapsedMilliseconds, _config.SubscriptionName);

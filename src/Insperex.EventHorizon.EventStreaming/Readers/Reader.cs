@@ -28,9 +28,9 @@ public class Reader<T> : IAsyncDisposable where T : class, ITopicMessage
             activity?.SetTag(TraceConstants.Tags.Count, items.Length);
             activity?.SetStatus(ActivityStatusCode.Ok);
 
-            // Upgrade Actions
-            foreach (var item in items)
-                item.Data = item.Data.Upgrade();
+            // // Upgrade Actions
+            // foreach (var item in items)
+            //     item.Data = item.Data.Upgrade();
 
             return items;
         }

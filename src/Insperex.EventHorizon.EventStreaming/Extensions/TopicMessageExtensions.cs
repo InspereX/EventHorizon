@@ -17,7 +17,7 @@ public static class TopicMessageExtensions
         where T : class, ITopicMessage
     {
         var payload = message.GetPayload();
-        var upgrade = AssemblyUtil.ActionDict[message.Type]
+        var upgrade = payload.GetType()
             .GetInterfaces()
             .FirstOrDefault(x => x.Name == typeof(IUpgradeTo<>).Name)?.GetMethod("Upgrade");
 
@@ -26,6 +26,5 @@ public static class TopicMessageExtensions
 
         upgrade?.Invoke(payload, null);
         return Activator.CreateInstance(typeof(T), message.StreamId, payload) as T;
-
     }
 }

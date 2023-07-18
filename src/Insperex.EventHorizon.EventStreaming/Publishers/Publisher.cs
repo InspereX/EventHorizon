@@ -59,7 +59,7 @@ public class Publisher<T> : IAsyncDisposable
                     }
                     catch (Exception e)
                     {
-                        tcs.SetException(e);
+                        tcs.TrySetException(e);
                     }
                 },
                 () =>

@@ -8,16 +8,18 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventStreaming;
+using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Insperex.EventHorizon.EventStreaming.Util;
+using Response = Insperex.EventHorizon.Abstractions.Models.TopicMessages.Response;
 
 namespace Insperex.EventHorizon.EventSourcing.Senders;
 
 public class SenderSubscriptionTracker : IAsyncDisposable
 {
     private readonly StreamingClient _streamingClient;
-    private readonly Dictionary<Type, Subscription<Response>> _subscriptionDict = new ();
-    private readonly Dictionary<string, MessageContext<Response>> _responseDict = new ();
+    private readonly Dictionary<Type, Subscription<BatchResponse>> _subscriptionDict = new ();
+    private readonly Dictionary<string, Response> _responseDict = new ();
     private readonly string _senderId;
     private bool _cleaning;
 
@@ -25,6 +27,7 @@ public class SenderSubscriptionTracker : IAsyncDisposable
     {
         _streamingClient = streamingClient;
         _senderId = NameUtil.AssemblyNameWithGuid;
+
         // Used for when process is stopped mid way
         AppDomain.CurrentDomain.ProcessExit += OnExit;
     }
@@ -37,13 +40,19 @@ public class SenderSubscriptionTracker : IAsyncDisposable
         if(_subscriptionDict.ContainsKey(type))
             return;
 
-        var subscription = _streamingClient.CreateSubscription<Response>()
+        var subscription = _streamingClient.CreateSubscription<BatchResponse>()
             .SubscriptionType(SubscriptionType.Exclusive)
             .OnBatch(async x =>
             {
                 // Check Results
-                foreach (var response in x.Messages)
-                    _responseDict[response.Data.Id] = response;
+                var responses = x.Messages
+                    .Select(m => m.Data)
+                    .SelectMany(m => m.Unwrap())
+                    .ToArray();
+
+                foreach (var response in responses)
+                    _responseDict[response.Id] = response;
+
             })
             .BatchSize(100000)
             .AddStream<T>(_senderId)
@@ -63,10 +72,10 @@ public class SenderSubscriptionTracker : IAsyncDisposable
             if (_responseDict.TryGetValue(request.Id, out var value))
             {
                 // Add Response, Make Custom if needed
-                responses.Add(value.Data.Error != null
-                    ? new Response(value.Data.Id, value.Data.SenderId, value.Data.StreamId,
-                        configGetErrorResult(request, (HttpStatusCode)value.Data.StatusCode, value.Data.Error), value.Data.Error, value.Data.StatusCode)
-                    : value.Data);
+                responses.Add(value.Error != null
+                    ? new Response(value.Id, value.SenderId, value.StreamId,
+                        configGetErrorResult(request, (HttpStatusCode)value.StatusCode, value.Error), value.Error, value.StatusCode)
+                    : value);
             }
         }
 
@@ -82,7 +91,7 @@ public class SenderSubscriptionTracker : IAsyncDisposable
             await group.Value.StopAsync();
 
             // Delete Topic
-            await _streamingClient.GetAdmin<Response>().DeleteTopicAsync(group.Key, _senderId);
+            await _streamingClient.GetAdmin<BatchResponse>().DeleteTopicAsync(group.Key, _senderId);
         }
         _subscriptionDict.Clear();
     }

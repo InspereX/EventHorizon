@@ -9,6 +9,7 @@ using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Util;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -107,8 +108,8 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions
             endpointRouteBuilder.MapGroup("api")
                 .MapPost(typeName + "/{id}/" + reqName, async (string id, TReq req)  =>
                 {
-                    var response = await sender.SendAndReceiveAsync<T>(new Request(id, req));
-                    var first = response.First();
+                    var response = await sender.SendAndReceiveAsync(id, req);
+                    var first = ((dynamic)response).First();
                     var statusCode = (HttpStatusCode)first.StatusCode;
                     if ((int)statusCode > 300)
                         return Results.Problem(first.Error, title: first.Error);

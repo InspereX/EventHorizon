@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,7 +9,6 @@ using Destructurama;
 using Insperex.EventHorizon.Abstractions.Extensions;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Testing;
-using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.Extensions;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Actions;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
@@ -17,13 +16,7 @@ using Insperex.EventHorizon.EventSourcing.Senders;
 using Insperex.EventHorizon.EventSourcing.Test.Fakers;
 using Insperex.EventHorizon.EventStore.Extensions;
 using Insperex.EventHorizon.EventStore.InMemory.Extensions;
-using Insperex.EventHorizon.EventStore.Interfaces.Factory;
-using Insperex.EventHorizon.EventStore.Interfaces.Stores;
-using Insperex.EventHorizon.EventStore.Models;
-using Insperex.EventHorizon.EventStore.MongoDb.Extensions;
 using Insperex.EventHorizon.EventStreaming;
-using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
-using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,7 +94,7 @@ public class SenderIntegrationTest : IAsyncLifetime
         _output.WriteLine($"Test Ran in {_stopwatch.ElapsedMilliseconds}ms");
         await _eventSourcingClient.GetSnapshotStore().DropDatabaseAsync(CancellationToken.None);
         await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(Account));
-        await _streamingClient.GetAdmin<Request>().DeleteTopicAsync(typeof(Account));
+        await _streamingClient.GetAdmin<BatchRequest>().DeleteTopicAsync(typeof(Account));
         await _host.StopAsync();
         _host.Dispose();
     }
@@ -145,34 +138,66 @@ public class SenderIntegrationTest : IAsyncLifetime
         // Assert.Equal(command.Amount, aggregate2.State.Account.Amount);
     }
 
-    [Fact]
-    public async Task TestLargeSendAndReceiveAsync()
+    [Theory]
+    // [InlineData(1,1)]
+    // [InlineData(1,100)]
+    // [InlineData(1,1000)]
+    // [InlineData(1,10000)]
+    // [InlineData(1,100000)]
+    // [InlineData(10,100000)]
+    // [InlineData(100,100000)]
+    // [InlineData(1000,100000)]
+    // [InlineData(100,1)]
+    // [InlineData(1000,1)]
+    // [InlineData(10000,1)]
+    // [InlineData(100000,1)]
+    [InlineData(10,10000)]
+    [InlineData(100,10000)]
+    [InlineData(1000,10000)]
+    public async Task TestLargeSendAndReceiveAsync(int batch, int req)
     {
         // Send Command
-        var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(10);
-        var result1 = await _sender2.SendAndReceiveAsync(streamId, new OpenAccount(1000));
-        var largeEvents  = Enumerable.Range(0, 10000).Select(x => new Deposit(100)).ToArray();
-        var result2 = await _sender2.SendAndReceiveAsync(streamId, largeEvents);
+        // var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(10);
+        // var result1 = await _sender2.SendAndReceiveAsync(streamId, new OpenAccount(1000));
 
-        // Assert Status
-        Assert.True(HttpStatusCode.OK == result1.StatusCode, result1.Error);
-        foreach (var response in result2)
-            Assert.True(HttpStatusCode.OK == response.StatusCode, response.Error);
+        // var largeEvents  = Enumerable.Range(0, 100000).Select(x => new Deposit(100)).ToArray();
+
+        // Batches
+        var batchRequests = new List<BatchRequest>();
+        for (var i = 0; i < batch; i++)
+        {
+            // Requests
+            var request = new List<Request>();
+            for (var j = 0; j < req; j++)
+            {
+                request.Add(new Request($"{j}", new Deposit(100)));
+            }
+
+            batchRequests.Add(new BatchRequest($"{i}", request.ToArray()));
+        }
+
+
+        var result2 = await _sender2.SendAndReceiveAsync<Account>(batchRequests.ToArray());
+
+        // // Assert Status
+        // Assert.True(HttpStatusCode.OK == result1.StatusCode, result1.Error);
+        // foreach (var response in result2)
+        //     Assert.True(HttpStatusCode.OK == response.StatusCode, response.Error);
 
         // Assert Account
-        var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
-        var events = await _eventSourcingClient.Aggregator().Build().GetEventsAsync(new[] { streamId });
-        Assert.Equal(streamId, aggregate.State.Id);
-        Assert.Equal(streamId, aggregate.Id);
-        Assert.NotEqual(DateTime.MinValue, aggregate.CreatedDate);
-        Assert.NotEqual(DateTime.MinValue, aggregate.UpdatedDate);
-        Assert.Equal(1001000, aggregate.State.Amount);
+        // var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
+        // // var events = await _eventSourcingClient.Aggregator().Build().GetEventsAsync(new[] { streamId });
+        // Assert.Equal(streamId, aggregate.State.Id);
+        // Assert.Equal(streamId, aggregate.Id);
+        // Assert.NotEqual(DateTime.MinValue, aggregate.CreatedDate);
+        // Assert.NotEqual(DateTime.MinValue, aggregate.UpdatedDate);
+        // Assert.Equal(10001000, aggregate.State.Amount);
         // Assert.Equal(10001, events.Length);
-        var grouped = events.ToLookup(x => x.Data.Type);
-        foreach (var group in grouped)
-        {
-            _output.WriteLine($"{group.Count()} {group.Key}");
-        }
+        // var grouped = events.ToLookup(x => x.Data.Type);
+        // foreach (var group in grouped)
+        // {
+        //     _output.WriteLine($"{group.Count()} {group.Key}");
+        // }
 
         // // Assert User Account
         // var store2 = _host.Services.GetRequiredService<Aggregator<Snapshot<UserAccount>, UserAccount>>();

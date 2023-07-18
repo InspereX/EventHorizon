@@ -35,7 +35,7 @@ public static class ServiceCollectionExtensions
             var streamingClient = x.GetRequiredService<StreamingClient>();
             var builder = x.GetRequiredService<AggregateBuilder<Snapshot<T>, T>>();
             onBuild?.Invoke(builder);
-            return new AggregateConsumerHostedService<Snapshot<T>, Request, T>(streamingClient, builder.Build());
+            return new AggregateConsumerHostedService<Snapshot<T>, BatchRequest, T>(streamingClient, builder.Build());
         });
 
         return configurator;
@@ -51,7 +51,7 @@ public static class ServiceCollectionExtensions
             var streamingClient = x.GetRequiredService<StreamingClient>();
             var builder = x.GetRequiredService<AggregateBuilder<Snapshot<T>, T>>();
             onBuild?.Invoke(builder);
-            return new AggregateConsumerHostedService<Snapshot<T>, Command, T>(streamingClient, builder.Build());
+            return new AggregateConsumerHostedService<Snapshot<T>, BatchCommand, T>(streamingClient, builder.Build());
         });
 
         return configurator;

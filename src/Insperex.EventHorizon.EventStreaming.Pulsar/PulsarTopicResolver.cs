@@ -2,6 +2,7 @@
 using System.Linq;
 using Insperex.EventHorizon.Abstractions.Attributes;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
+using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Models;
@@ -36,7 +37,13 @@ public class PulsarTopicResolver : ITopicResolver
                 var tenant = pulsarAttr?.Tenant ?? DefaultTenant;
                 var @namespace = pulsarAttr?.Namespace ?? DefaultNamespace;
                 var topic = topicName == null ? x.Topic : $"{x.Topic}-{topicName}";
-                return $"{persistent}://{tenant}/{@namespace}/{topic}".Replace(TypeKey, typeof(TM).Name);
+                var path = $"{persistent}://{tenant}/{@namespace}/{topic}";
+
+                // Replace $type to actual type
+                if (path.Contains(TypeKey))
+                    path = path.Replace(TypeKey,typeof(TM).Name);
+
+                return path;
             })
             .ToArray();
 

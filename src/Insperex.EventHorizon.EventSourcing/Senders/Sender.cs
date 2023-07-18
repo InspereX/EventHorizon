@@ -36,12 +36,12 @@ public class Sender
     public Task SendAsync<T>(string streamId, params ICommand<T>[] objs) where T : IState
     {
         var commands = objs.Select(x => new Command(streamId, x)).ToArray();
-        return SendAsync<T>(commands);
+        return SendAsync<T>(new BatchCommand(streamId, commands));
     }
 
-    public Task SendAsync<T>(params Command[] commands) where T : IState
+    public Task SendAsync<T>(params BatchCommand[] commands) where T : IState
     {
-        return GetPublisher<Command, T>(null).PublishAsync(commands);
+        return GetPublisher<BatchCommand, T>(null).PublishAsync(commands);
     }
 
     public async Task<TR> SendAndReceiveAsync<T, TR>(string streamId, IRequest<T, TR> obj)
@@ -57,37 +57,44 @@ public class Sender
         where TR : IResponse<T>
     {
         var requests = objs.Select(x => new Request(streamId, x)).ToArray();
-        var res = await SendAndReceiveAsync<T>(requests);
+        var res = await SendAndReceiveAsync<T>(new BatchRequest(streamId, requests));
         return res.Select(x => JsonSerializer.Deserialize<TR>(x.Payload)).ToArray();
     }
 
-    public async Task<Response[]> SendAndReceiveAsync<T>(params Request[] requests) where T : IState
+    public async Task<Response[]> SendAndReceiveAsync<T>(params BatchRequest[] batchRequests) where T : IState
     {
         // Ensure subscription is ready
         await _subscriptionTracker.TrackSubscription<T>();
 
         // Sent SenderId to respond to
-        foreach (var request in requests)
+        foreach (var request in batchRequests)
             request.SenderId = _subscriptionTracker.GetSenderId();
 
         // Send requests
-        var requestDict = requests.ToDictionary(x => x.Id);
-        await GetPublisher<Request, T>(null).PublishAsync(requests);
+        var batchRequestDict = batchRequests.SelectMany(x => x.Unwrap()).ToDictionary(x => x.Id);
+        await GetPublisher<BatchRequest, T>(null).PublishAsync(batchRequests);
 
         // Wait for messages
         var sw = Stopwatch.StartNew();
         var responseDict = new Dictionary<string, Response>();
-        while (responseDict.Count != requestDict.Count
+        while (responseDict.Count != batchRequestDict.Count
                && sw.ElapsedMilliseconds < _config.Timeout.TotalMilliseconds)
         {
-            var responses = _subscriptionTracker.GetResponses(requestDict.Values.ToArray(), _config.GetErrorResult);
-            foreach (var response in responses)
-                responseDict[response.Id] = response;
+            var requests = batchRequestDict.Values.ToArray();
+            var responses = _subscriptionTracker.GetResponses(requests, _config.GetErrorResult);
+            if (responses.Any())
+            {
+                sw.Reset();
+                sw.Start();
+                foreach (var response in responses)
+                    responseDict[response.Id] = response;
+            }
+
             await Task.Delay(200);
         }
 
         // Add Timed Out Results
-        foreach (var request in requestDict.Values)
+        foreach (var request in batchRequestDict.Values)
             if (!responseDict.ContainsKey(request.Id))
             {
                 var error = "Request Timed Out";
@@ -98,6 +105,8 @@ public class Sender
         var errors = responseDict.Where(x => x.Value.Error != null).GroupBy(x => x.Value.Error);
         foreach (var group in errors)
             _logger.LogError("Sender - Response Error(s) {Count} => {Error}", group.Count(), group.Key);
+
+        _logger.LogInformation("Sender - Received All Responses {Count} in {Duration}", responseDict.Count, sw.ElapsedMilliseconds);
 
         return responseDict.Values.ToArray();
     }
