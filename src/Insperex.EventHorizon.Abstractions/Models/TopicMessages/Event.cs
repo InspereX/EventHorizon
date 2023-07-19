@@ -7,14 +7,15 @@ namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 
 public class Event : ITopicMessage
 {
-    public long SequenceId { get; set; }
     public string Id { get; set; }
+    public long SequenceId { get; set; }
     public string StreamId { get; set; }
     public string Type { get; set; }
     public string Payload { get; set; }
 
     public Event()
     {
+        Id = Guid.NewGuid().ToString();
     }
 
     public Event(string streamId, object payload)

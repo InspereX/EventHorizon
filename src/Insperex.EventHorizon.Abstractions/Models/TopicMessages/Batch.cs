@@ -9,6 +9,7 @@ namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages
     public class Batch<T> : ITopicMessage
         where T : class, ITopicMessage
     {
+        public string Id { get; set; }
         public string StreamId { get; set; }
         public Dictionary<string, T> Payload { get; set; }
 
@@ -19,13 +20,12 @@ namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages
         public Batch(string streamId, T[] payload)
         {
             StreamId = streamId;
-            Payload = payload.ToDictionary(x => x.StreamId);
+            Payload = payload.ToDictionary(x => x.Id);
         }
     }
 
     public class BatchRequest : Batch<Request>
     {
-        public string Id { get; set; }
         public string SenderId { get; set; }
 
         public BatchRequest()
@@ -41,7 +41,6 @@ namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages
 
     public class BatchResponse : Batch<Response>
     {
-        public string Id { get; set; }
         public string SenderId { get; set; }
 
         public BatchResponse()
@@ -59,12 +58,19 @@ namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages
     public class BatchCommand : Batch<Command>
     {
         public BatchCommand() { }
-        public BatchCommand(string streamId, Command[] payload) : base(streamId, payload) { }
+
+        public BatchCommand(string streamId, Command[] payload) : base(streamId, payload)
+        {
+
+        }
     }
 
     public class BatchEvent : Batch<Event>
     {
         public BatchEvent() { }
-        public BatchEvent(string streamId, Event[] payload) : base(streamId, payload) { }
+        public BatchEvent(string streamId, Event[] payload) : base(streamId, payload)
+        {
+            Id = Guid.NewGuid().ToString();
+        }
     }
 }
