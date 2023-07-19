@@ -8,4 +8,5 @@ public class PublisherConfig
     public bool IsGuaranteed { get; set; }
     public TimeSpan SendTimeout { get; set; }
     public int BatchSize { get; set; }
+    public bool IsLoggingActivity { get; set; }
 }

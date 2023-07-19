@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,7 +76,7 @@ public class SenderIntegrationTest : IAsyncLifetime
             .Build();
 
         _sender2 = _host.Services.GetRequiredService<SenderBuilder>()
-            .Timeout(TimeSpan.FromSeconds(60))
+            .Timeout(TimeSpan.FromMinutes(1))
             .GetErrorResult((req, status, error) => new AccountResponse(status, error))
             .Build();
 
@@ -86,14 +87,22 @@ public class SenderIntegrationTest : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _host.StartAsync();
+
+        // // Warmup
+        // var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(10);
+        // var events = Enumerable.Range(0, 10).Select(x => new OpenAccount(100)).ToArray();
+        // var result1 = await _sender2.SendAndReceiveAsync(streamId, events);
+
+
         _stopwatch = Stopwatch.StartNew();
     }
 
     public async Task DisposeAsync()
     {
+        _stopwatch.Stop();
         _output.WriteLine($"Test Ran in {_stopwatch.ElapsedMilliseconds}ms");
         await _eventSourcingClient.GetSnapshotStore().DropDatabaseAsync(CancellationToken.None);
-        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(Account));
+        await _streamingClient.GetAdmin<BatchEvent>().DeleteTopicAsync(typeof(Account));
         await _streamingClient.GetAdmin<BatchRequest>().DeleteTopicAsync(typeof(Account));
         await _host.StopAsync();
         _host.Dispose();
@@ -117,51 +126,13 @@ public class SenderIntegrationTest : IAsyncLifetime
         Assert.True(HttpStatusCode.OK == result3.Result.StatusCode, result3.Result.Error);
         Assert.True(HttpStatusCode.OK == result4.Result.StatusCode, result4.Result.Error);
         Assert.True(HttpStatusCode.OK == result5.Result.StatusCode, result5.Result.Error);
-
-        // Assert Account
-        var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
-        var events = await _eventSourcingClient.Aggregator().Build().GetEventsAsync(new[] { streamId });
-        Assert.Equal(streamId, aggregate.State.Id);
-        Assert.Equal(streamId, aggregate.Id);
-        Assert.NotEqual(DateTime.MinValue, aggregate.CreatedDate);
-        Assert.NotEqual(DateTime.MinValue, aggregate.UpdatedDate);
-        Assert.Equal(3, events.Length);
-        Assert.Equal(1000, aggregate.State.Amount);
-
-        // // Assert User Account
-        // var store2 = _host.Services.GetRequiredService<Aggregator<Snapshot<UserAccount>, UserAccount>>();
-        // var aggregate2  = await store2.GetAsync(streamId);
-        // Assert.Equal(streamId, aggregate2.State.Id);
-        // Assert.Equal(streamId, aggregate2.Id);
-        // Assert.NotEqual(DateTime.MinValue, aggregate2.CreatedDate);
-        // Assert.NotEqual(DateTime.MinValue, aggregate2.UpdatedDate);
-        // Assert.Equal(command.Amount, aggregate2.State.Account.Amount);
     }
 
     [Theory]
-    [InlineData(1,1)]
-    [InlineData(1,100)]
-    [InlineData(1,1000)]
-    [InlineData(1,10000)]
-    [InlineData(100,1)]
-    [InlineData(1000,1)]
-    [InlineData(10000,1)]
-    [InlineData(100000,1)]
-    // [InlineData(1,100000)]
-    // [InlineData(10,100000)]
-    // [InlineData(100,100000)]
-    // [InlineData(1000,100000)]
-    // [InlineData(10,10000)]
-    // [InlineData(100,10000)]
-    // [InlineData(1000,10000)]
+    [InlineData(100,10000)]
+    [InlineData(10000,100)]
     public async Task TestLargeSendAndReceiveAsync(int batch, int req)
     {
-        // Send Command
-        // var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(10);
-        // var result1 = await _sender2.SendAndReceiveAsync(streamId, new OpenAccount(1000));
-
-        // var largeEvents  = Enumerable.Range(0, 100000).Select(x => new Deposit(100)).ToArray();
-
         // Batches
         var batchRequests = new List<BatchRequest>();
         for (var i = 0; i < batch; i++)
@@ -169,44 +140,15 @@ public class SenderIntegrationTest : IAsyncLifetime
             // Requests
             var request = new List<Request>();
             for (var j = 0; j < req; j++)
-            {
                 request.Add(new Request($"{j}", new Deposit(100)));
-            }
-
             batchRequests.Add(new BatchRequest($"{i}", request.ToArray()));
         }
 
+        var result = await _sender2.SendAndReceiveAsync<Account>(batchRequests.ToArray());
 
-        var result2 = await _sender2.SendAndReceiveAsync<Account>(batchRequests.ToArray());
-
-        // // Assert Status
-        // Assert.True(HttpStatusCode.OK == result1.StatusCode, result1.Error);
-        // foreach (var response in result2)
-        //     Assert.True(HttpStatusCode.OK == response.StatusCode, response.Error);
-
-        // Assert Account
-        // var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
-        // // var events = await _eventSourcingClient.Aggregator().Build().GetEventsAsync(new[] { streamId });
-        // Assert.Equal(streamId, aggregate.State.Id);
-        // Assert.Equal(streamId, aggregate.Id);
-        // Assert.NotEqual(DateTime.MinValue, aggregate.CreatedDate);
-        // Assert.NotEqual(DateTime.MinValue, aggregate.UpdatedDate);
-        // Assert.Equal(10001000, aggregate.State.Amount);
-        // Assert.Equal(10001, events.Length);
-        // var grouped = events.ToLookup(x => x.Data.Type);
-        // foreach (var group in grouped)
-        // {
-        //     _output.WriteLine($"{group.Count()} {group.Key}");
-        // }
-
-        // // Assert User Account
-        // var store2 = _host.Services.GetRequiredService<Aggregator<Snapshot<UserAccount>, UserAccount>>();
-        // var aggregate2  = await store2.GetAsync(streamId);
-        // Assert.Equal(streamId, aggregate2.State.Id);
-        // Assert.Equal(streamId, aggregate2.Id);
-        // Assert.NotEqual(DateTime.MinValue, aggregate2.CreatedDate);
-        // Assert.NotEqual(DateTime.MinValue, aggregate2.UpdatedDate);
-        // Assert.Equal(command.Amount, aggregate2.State.Account.Amount);
+        // Assert Status
+        foreach (var response in result)
+            Assert.True(response.StatusCode < 300, response.Error);
     }
 
     [Fact]

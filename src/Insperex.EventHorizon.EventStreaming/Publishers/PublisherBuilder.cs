@@ -16,6 +16,7 @@ public class PublisherBuilder<T> where T : class, ITopicMessage, new()
     private TimeSpan _sendTimeout = TimeSpan.FromMinutes(2);
     private bool _isGuaranteed;
     private int _batchSize = 100;
+    private bool _isLoggingActivity = true;
 
     public PublisherBuilder(IStreamFactory factory, ILoggerFactory loggerFactory)
     {
@@ -55,6 +56,12 @@ public class PublisherBuilder<T> where T : class, ITopicMessage, new()
         return this;
     }
 
+    public PublisherBuilder<T> IsLoggingActivity(bool isLoggingActivity)
+    {
+        _isLoggingActivity = isLoggingActivity;
+        return this;
+    }
+
     public Publisher<T> Build()
     {
         var config = new PublisherConfig
@@ -62,7 +69,8 @@ public class PublisherBuilder<T> where T : class, ITopicMessage, new()
             Topic = _topic,
             IsGuaranteed = _isGuaranteed,
             SendTimeout = _sendTimeout,
-            BatchSize = _batchSize
+            BatchSize = _batchSize,
+            IsLoggingActivity = _isLoggingActivity
         };
         var logger = _loggerFactory.CreateLogger<Publisher<T>>();
 

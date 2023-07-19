@@ -24,6 +24,7 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
     private Func<SubscriptionContext<T>, Task> _onBatch;
     private SubscriptionType _subscriptionType = Abstractions.Models.SubscriptionType.KeyShared;
     private bool _isPreload;
+    private bool _isLoggingActivity = true;
 
     public SubscriptionBuilder(IStreamFactory factory, ILoggerFactory loggerFactory)
     {
@@ -91,6 +92,12 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
         return this;
     }
 
+    public SubscriptionBuilder<T> IsLoggingActivity(bool isLoggingActivity)
+    {
+        _isLoggingActivity = isLoggingActivity;
+        return this;
+    }
+
     public SubscriptionBuilder<T> OnBatch(Func<SubscriptionContext<T>, Task> onBatch)
     {
         _onBatch = onBatch;
@@ -109,6 +116,7 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
             StartDateTime = _startDateTime,
             IsBeginning = _isBeginning,
             IsPreload = _isPreload,
+            IsLoggingActivity = _isLoggingActivity,
             OnBatch = _onBatch
         };
         var logger = _loggerFactory.CreateLogger<Subscription<T>>();

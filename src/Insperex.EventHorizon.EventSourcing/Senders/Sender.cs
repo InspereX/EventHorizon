@@ -84,8 +84,7 @@ public class Sender
             var responses = _subscriptionTracker.GetResponses(requests, _config.GetErrorResult);
             if (responses.Any())
             {
-                sw.Reset();
-                sw.Start();
+                // sw = Stopwatch.StartNew();
                 foreach (var response in responses)
                     responseDict[response.Id] = response;
             }
@@ -102,11 +101,12 @@ public class Sender
                     _config.GetErrorResult?.Invoke(request, HttpStatusCode.RequestTimeout, error), error, (int)HttpStatusCode.RequestTimeout);
             }
 
-        var errors = responseDict.Where(x => x.Value.Error != null).GroupBy(x => x.Value.Error);
+        var errors = responseDict.Where(x => x.Value.Error != null).GroupBy(x => x.Value.Error).ToArray();
         foreach (var group in errors)
             _logger.LogError("Sender - Response Error(s) {Count} => {Error}", group.Count(), group.Key);
 
-        _logger.LogInformation("Sender - Received All Responses {Count} in {Duration}", responseDict.Count, sw.ElapsedMilliseconds);
+        if(errors.Any() != true)
+            _logger.LogInformation("Sender - Received All Responses {Count} in {Duration}", responseDict.Count, sw.ElapsedMilliseconds);
 
         return responseDict.Values.ToArray();
     }

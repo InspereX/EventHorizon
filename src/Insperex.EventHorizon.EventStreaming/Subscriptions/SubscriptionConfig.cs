@@ -21,4 +21,5 @@ public class SubscriptionConfig<T> where T : ITopicMessage
 
     [NotLogged] public Func<SubscriptionContext<T>, Task> OnBatch { get; set; }
     [NotLogged] public bool IsPreload { get; set; }
+    [NotLogged] public bool IsLoggingActivity { get; set; }
 }

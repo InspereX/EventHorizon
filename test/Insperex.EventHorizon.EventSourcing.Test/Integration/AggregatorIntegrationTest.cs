@@ -124,10 +124,12 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(9);
         var command1 = new Command(streamId, new ChangeUserName("Bob"));
         var command2 = new Command(streamId, new ChangeUserName("Joe"));
+        var batch1 = new BatchCommand(streamId, new[] { command1 });
+        var batch2 = new BatchCommand(streamId, new[] { command2 });
 
         // Act
-        var res1 = await _userAggregator.HandleAsync(command1, CancellationToken.None);
-        var res2 = await _userAggregator.HandleAsync(command2, CancellationToken.None);
+        var res1 = await _userAggregator.HandleAsync(batch1, CancellationToken.None);
+        var res2 = await _userAggregator.HandleAsync(batch2, CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _userAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);
@@ -145,9 +147,10 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         // Setup
         var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(9);
         var @event = new Event(streamId, 1, new AccountOpened(100));
+        var batch = new BatchEvent(streamId, new [] {@event });
 
         // Act
-        var res = await _accountAggregator.HandleAsync(@event, CancellationToken.None);
+        var res = await _accountAggregator.HandleAsync(batch, CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _accountAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);

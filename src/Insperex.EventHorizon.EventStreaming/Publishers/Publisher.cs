@@ -44,7 +44,8 @@ public class Publisher<T> : IAsyncDisposable
         try
         {
             // await _producer.SendAsync(messages);
-            // _logger.LogInformation("Publisher - Sent {Type}(s) {Count} in {Duration} {Topic}",
+            // if(_config.IsLoggingActivity)
+            //     _logger.LogInformation("Publisher - Sent {Type}(s) {Count} in {Duration} {Topic}",
             //     _typeName, messages.Length, _config.Topic, sw.ElapsedMilliseconds);
             // activity?.SetStatus(ActivityStatusCode.Ok);
 
@@ -65,7 +66,8 @@ public class Publisher<T> : IAsyncDisposable
                 () =>
                 {
                     tcs.SetResult(true);
-                    _logger.LogInformation("Publisher - Sent {Type}(s) {Count} in {Duration} {Topic}",
+                    if(_config.IsLoggingActivity)
+                        _logger.LogInformation("Publisher - Sent {Type}(s) {Count} in {Duration} {Topic}",
                         _typeName, messages.Length, sw.ElapsedMilliseconds, _config.Topic);
                     activity?.SetStatus(ActivityStatusCode.Ok);
                     activity?.Dispose();

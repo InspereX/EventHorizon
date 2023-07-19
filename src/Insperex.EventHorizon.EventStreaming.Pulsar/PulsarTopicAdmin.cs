@@ -36,9 +36,32 @@ public class PulsarTopicAdmin<T> : ITopicAdmin<T> where T : ITopicMessage
         try
         {
             if (!topic.IsPersisted)
+            {
                 await _admin.CreateNonPartitionedTopicAsync(topic.Tenant, topic.Namespace, topic.Topic, true, new Dictionary<string, string>(), ct);
+
+                var exists = false;
+                while (!exists)
+                {
+                    var res = await _admin.GetTopicsAsync(topic.Tenant, topic.Namespace, Mode.NON_PERSISTENT, false, ct);
+                    exists = res.Contains(topic.ToString());
+                    if(!exists) await Task.Delay(200);
+                }
+            }
             else
+            {
                 await _admin.CreateNonPartitionedTopic2Async(topic.Tenant, topic.Namespace, topic.Topic, true, new Dictionary<string, string>(), ct);
+
+                var exists = false;
+                while (!exists)
+                {
+                    var res = await _admin.GetTopicsAsync(topic.Tenant, topic.Namespace, Mode.PERSISTENT, false, ct);
+                    exists = res.Contains(topic.ToString());
+                    if(!exists) await Task.Delay(200);
+                }
+            }
+
+
+
         }
         catch (ApiException ex)
         {

@@ -74,22 +74,22 @@ public static class ServiceCollectionExtensions
         return configurator;
     }
 
-    public static EventHorizonConfigurator AddMigrationHostedService<TSource, TTarget>(this EventHorizonConfigurator configurator,
-        Action<AggregateBuilder<Snapshot<TTarget>, TTarget>> onBuild = null)
-        where TSource : class, IState, new()
-        where TTarget : class, IState, new()
-    {
-        configurator.AddEventSourcing();
-
-        configurator.Collection.AddHostedService(x =>
-        {
-            var streamingClient = x.GetRequiredService<StreamingClient>();
-            var builder = x.GetRequiredService<AggregateBuilder<Snapshot<TTarget>, TTarget>>();
-            onBuild?.Invoke(builder);
-            var aggregator = builder.Build();
-            return new AggregateMigrationHostedService<TSource,TTarget>(aggregator, streamingClient);
-        });
-
-        return configurator;
-    }
+    // public static EventHorizonConfigurator AddMigrationHostedService<TSource, TTarget>(this EventHorizonConfigurator configurator,
+    //     Action<AggregateBuilder<Snapshot<TTarget>, TTarget>> onBuild = null)
+    //     where TSource : class, IState, new()
+    //     where TTarget : class, IState, new()
+    // {
+    //     configurator.AddEventSourcing();
+    //
+    //     configurator.Collection.AddHostedService(x =>
+    //     {
+    //         var streamingClient = x.GetRequiredService<StreamingClient>();
+    //         var builder = x.GetRequiredService<AggregateBuilder<Snapshot<TTarget>, TTarget>>();
+    //         onBuild?.Invoke(builder);
+    //         var aggregator = builder.Build();
+    //         return new AggregateMigrationHostedService<TSource,TTarget>(aggregator, streamingClient);
+    //     });
+    //
+    //     return configurator;
+    // }
 }

@@ -174,7 +174,8 @@ public class Subscription<T> : IAsyncDisposable where T : class, ITopicMessage, 
                 // foreach (var item in batch)
                 //     item.Data = item.Data.Upgrade();
 
-                _logger.LogInformation("Subscription - Loaded {Type}(s) {Count} in {Duration} {Subscription}",
+                if(_config.IsLoggingActivity)
+                    _logger.LogInformation("Subscription - Loaded {Type}(s) {Count} in {Duration} {Subscription}",
                     typeof(T).Name, batch.Length, sw.ElapsedMilliseconds, _config.SubscriptionName);
             }
 
@@ -220,7 +221,8 @@ public class Subscription<T> : IAsyncDisposable where T : class, ITopicMessage, 
             // Logging
             var min = batch.Min(x => x.TopicData.CreatedDate);
             var max = batch.Max(x => x.TopicData.CreatedDate);
-            _logger.LogInformation("Subscription - Processed {Type}(s) {Count} in {Duration}, from {Start}-{End} {Subscription}",
+            if(_config.IsLoggingActivity)
+                _logger.LogInformation("Subscription - Processed {Type}(s) {Count} in {Duration}, from {Start}-{End} {Subscription}",
                 typeof(T).Name, batch.Length, sw.ElapsedMilliseconds, min, max, _config.SubscriptionName);
             activity?.SetTag(TraceConstants.Tags.Count, batch.Length);
             activity?.SetTag(TraceConstants.Tags.Start, min);

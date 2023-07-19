@@ -6,7 +6,6 @@ namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages
     public class Batch<T> : ITopicMessage
         where T : class, ITopicMessage
     {
-        public string Id { get; set; }
         public string StreamId { get; set; }
         public string Type { get; set; }
         public string Payload { get; set; }
@@ -17,7 +16,6 @@ namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages
 
         public Batch(string streamId, T[] payload)
         {
-            Id = streamId;
             StreamId = streamId;
             Payload = JsonSerializer.Serialize(payload);
             Type = payload.GetType().Name;

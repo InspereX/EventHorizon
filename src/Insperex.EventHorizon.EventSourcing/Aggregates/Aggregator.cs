@@ -12,7 +12,6 @@ using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStreaming;
-using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.Publishers;
 using Microsoft.Extensions.Logging;
 
@@ -83,17 +82,70 @@ public class Aggregator<TParent, T>
         }
     }
 
-    public async Task<BatchResponse[]> HandleBatchAsync(BatchRequest[] batches, CancellationToken ct)
+    // public async Task<BatchResponse[]> HandleBatchAsync(BatchRequest[] batches, CancellationToken ct)
+    // {
+    //     // Handle
+    //     var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
+    //     var responses = await HandleAsync(messages, ct);
+    //     if (responses?.Any() != true) return Array.Empty<BatchResponse>();
+    //
+    //     // Build Batch Responses
+    //     var responseDict = responses.ToDictionary(x => x.Id);
+    //     var batchResponses = batches
+    //         .Select(x => new BatchResponse(x.Id, x .SenderId, x.Unwrap()
+    //             .Select(s => responseDict[s.Id])
+    //             .ToArray()))
+    //         .ToArray();
+    //
+    //     return batchResponses;
+    // }
+    //
+    // public async Task<BatchResponse[]> HandleBatchAsync(BatchCommand[] batches, CancellationToken ct)
+    // {
+    //     // Handle
+    //     var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
+    //     await HandleAsync(messages, ct);
+    //     return Array.Empty<BatchResponse>();
+    // }
+    //
+    // public async Task<BatchResponse[]> HandleBatchAsync(BatchEvent[] batches, CancellationToken ct)
+    // {
+    //     var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
+    //     var publisher = GetPublisher<Event>(null);
+    //     await publisher.PublishAsync(messages);
+    //     return Array.Empty<BatchResponse>();
+    // }
+
+    public async Task<BatchResponse> HandleAsync<TM>(Batch<TM> message, CancellationToken ct) where TM : class, ITopicMessage
     {
-        // Handle
-        var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
-        var responses = await HandleAsync(messages, ct);
-        if (responses?.Any() != true) return Array.Empty<BatchResponse>();
+        var responses = await HandleAsync(new[] { message }, ct);
+        return responses.FirstOrDefault();
+    }
+
+    public async Task<BatchResponse[]> HandleAsync<TM>(Batch<TM>[] batches, CancellationToken ct) where TM : class, ITopicMessage
+    {
+        var sw = Stopwatch.StartNew();
+        // Load Aggregate
+        var streamIds = batches.SelectMany(x => x.Unwrap().Select(s => s.StreamId)).Distinct().ToArray();
+        var aggregateDict = await GetAggregatesFromStatesAsync(streamIds, ct);
+
+        // Map/Apply Changes
+        TriggerHandle(batches, aggregateDict);
+
+        // Save Successful Aggregates and Events
+        await SaveAllAsync(aggregateDict);
+
+        _logger.LogInformation("{State} Handled {Count} {Type} in {Duration}",
+            typeof(T).Name, batches.Length, typeof(TM).Name, sw.ElapsedMilliseconds);
+
+        // Defensive
+        if (batches is not BatchRequest[] batchRequests) return Array.Empty<BatchResponse>();
 
         // Build Batch Responses
+        var responses = aggregateDict.Values.SelectMany(x => x.Responses).ToArray();
         var responseDict = responses.ToDictionary(x => x.Id);
-        var batchResponses = batches
-            .Select(x => new BatchResponse(x.Id, x .SenderId, x.Unwrap()
+        var batchResponses = batchRequests
+            .Select(x => new BatchResponse(x.StreamId, x.SenderId, x.Unwrap()
                 .Select(s => responseDict[s.Id])
                 .ToArray()))
             .ToArray();
@@ -101,47 +153,9 @@ public class Aggregator<TParent, T>
         return batchResponses;
     }
 
-    public async Task<BatchResponse[]> HandleBatchAsync(BatchCommand[] batches, CancellationToken ct)
-    {
-        // Handle
-        var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
-        await HandleAsync(messages, ct);
-        return Array.Empty<BatchResponse>();
-    }
-
-    public async Task<BatchResponse[]> HandleBatchAsync(BatchEvent[] batches, CancellationToken ct)
+    private void TriggerHandle<TM>(Batch<TM>[] batches, Dictionary<string, Aggregate<T>> aggregateDict) where TM : class, ITopicMessage
     {
         var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
-        var publisher = GetPublisher<Event>(null);
-        await publisher.PublishAsync(messages);
-        return Array.Empty<BatchResponse>();
-    }
-
-    public async Task<Response> HandleAsync<TM>(TM message, CancellationToken ct) where TM : ITopicMessage
-    {
-        var responses = await HandleAsync(new[] { message }, ct);
-        return responses.FirstOrDefault();
-    }
-
-    public async Task<Response[]> HandleAsync<TM>(TM[] messages, CancellationToken ct) where TM : ITopicMessage
-    {
-        _logger.LogInformation("{State} Handling {Count} {Type}", typeof(T).Name, messages.Length, typeof(TM).Name);
-
-        // Load Aggregate
-        var streamIds = messages.Select(x => x.StreamId).Distinct().ToArray();
-        var aggregateDict = await GetAggregatesFromStatesAsync(streamIds, ct);
-
-        // Map/Apply Changes
-        TriggerHandle(messages, aggregateDict);
-
-        // Save Successful Aggregates and Events
-        await SaveAllAsync(aggregateDict);
-
-        return  aggregateDict.Values.SelectMany(x => x.Responses).ToArray();
-    }
-
-    private void TriggerHandle<TM>(TM[] messages, Dictionary<string, Aggregate<T>> aggregateDict) where TM : ITopicMessage
-    {
         foreach (var message in messages)
         {
             var agg = aggregateDict.GetValueOrDefault(message.StreamId);
@@ -210,7 +224,7 @@ public class Aggregator<TParent, T>
     {
         try
         {
-            // Save Snapshots and then track failures
+            var sw = Stopwatch.StartNew();
             var parents = aggregateDict.Values
                 .Where(x => x.Error == null)
                 .Where(x => x.IsDirty)
@@ -236,6 +250,8 @@ public class Aggregator<TParent, T>
                     HttpStatusCode.Created : HttpStatusCode.OK);
                 aggregateDict[id].SequenceId++;
             }
+            _logger.LogInformation("CrudStore - Saved {Type}(s) {Count} in {Duration}",
+                typeof(T).Name, aggregateDict.Count, sw.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
@@ -256,8 +272,8 @@ public class Aggregator<TParent, T>
 
         try
         {
-            var publisher = GetPublisher<Event>(null);
-            await publisher.PublishAsync(events);
+            var publisher = GetPublisher<BatchEvent>(null);
+            await publisher.PublishAsync(new BatchEvent(Guid.NewGuid().ToString(), events));
         }
         catch (Exception ex)
         {
@@ -319,6 +335,7 @@ public class Aggregator<TParent, T>
         try
         {
             // Load Snapshots
+            var sw = Stopwatch.StartNew();
             streamIds = streamIds.Distinct().ToArray();
             var snapshots = await _crudStore.GetAllAsync(streamIds, ct);
             var parentDict = snapshots.ToDictionary(x => x.Id);
@@ -340,6 +357,8 @@ public class Aggregator<TParent, T>
                     agg.SetStatus(HttpStatusCode.InternalServerError, e.Message);
             }
 
+            _logger.LogInformation("CrudStore - Loaded {Type}(s) {Count} in {Duration}",
+                typeof(T).Name, aggregateDict.Count, sw.ElapsedMilliseconds);
             return aggregateDict;
         }
         catch (Exception ex)

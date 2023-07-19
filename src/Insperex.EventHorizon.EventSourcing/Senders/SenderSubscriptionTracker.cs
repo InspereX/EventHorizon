@@ -42,6 +42,7 @@ public class SenderSubscriptionTracker : IAsyncDisposable
 
         var subscription = _streamingClient.CreateSubscription<BatchResponse>()
             .SubscriptionType(SubscriptionType.Exclusive)
+            .IsLoggingActivity(false)
             .OnBatch(async x =>
             {
                 // Check Results
@@ -52,12 +53,19 @@ public class SenderSubscriptionTracker : IAsyncDisposable
 
                 foreach (var response in responses)
                     _responseDict[response.Id] = response;
-
             })
             .BatchSize(100000)
             .AddStream<T>(_senderId)
             .IsBeginning(true)
             .Build();
+
+        // warmup
+        await _streamingClient.CreatePublisher<BatchResponse>()
+            .AddStream<T>(_senderId)
+            .IsLoggingActivity(false)
+            .IsGuaranteed(true)
+            .Build()
+            .PublishAsync(new BatchResponse("Warmup", _senderId, Array.Empty<Response>()));
 
         _subscriptionDict[type] = subscription;
 
