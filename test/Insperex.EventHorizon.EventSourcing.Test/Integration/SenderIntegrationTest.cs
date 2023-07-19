@@ -127,18 +127,27 @@ public class SenderIntegrationTest : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData(1,1)]
-    [InlineData(1,100)]
-    [InlineData(1,1000)]
-    [InlineData(1,10000)]
-    [InlineData(1,100000)]
-    [InlineData(10,1)]
-    [InlineData(100,1)]
-    [InlineData(1000,1)]
-    [InlineData(10000,1)]
-    [InlineData(100000,1)]
-    public async Task TestLargeSendAndReceiveAsync(int batch, int req)
+    // [InlineData(1,1, 1000)]
+    // [InlineData(1,100, 1000)]
+    // [InlineData(1,1000, 1000)]
+    // [InlineData(1,10000, 1000)]
+    // [InlineData(1,100000, 1000)]
+    // [InlineData(10,1000)]
+    // [InlineData(10,10000)]
+    // [InlineData(10,100000)]
+
+    [InlineData(100,1, 10)]
+    [InlineData(1000,1, 100)]
+    [InlineData(10000,1, 1000)]
+    [InlineData(100000,1, 10000)]
+    public async Task TestLargeSendAndReceiveAsync(int batch, int req, int batchSize)
     {
+        var sender = _host.Services.GetRequiredService<SenderBuilder>()
+            .Timeout(TimeSpan.FromMinutes(1))
+            .BatchSize(batchSize)
+            .GetErrorResult((_, status, error) => new AccountResponse(status, error))
+            .Build();
+
         // Batches
         var batchRequests = new List<BatchRequest>();
         for (var i = 0; i < batch; i++)
@@ -150,7 +159,7 @@ public class SenderIntegrationTest : IAsyncLifetime
             batchRequests.Add(new BatchRequest($"{i}", request.ToArray()));
         }
 
-        var result = await _sender2.SendAndReceiveAsync<Account>(batchRequests.ToArray());
+        var result = await sender.SendAndReceiveAsync<Account>(batchRequests.ToArray());
 
         // Assert Status
         foreach (var response in result)

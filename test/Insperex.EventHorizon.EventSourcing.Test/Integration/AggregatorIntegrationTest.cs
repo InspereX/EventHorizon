@@ -103,7 +103,8 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         var publisher = _streamingClient.CreatePublisher<Event>().AddStream<Account>().Build();
 
         // Setup Event
-        await publisher.PublishAsync(streamId, new AccountOpened(100));
+        var wrapped = new Event(streamId, new AccountOpened(100));
+        await publisher.PublishAsync(wrapped);
 
         // Refresh Snapshots
         await _eventSourcingClient.Aggregator().Build().RebuildAllAsync(CancellationToken.None);

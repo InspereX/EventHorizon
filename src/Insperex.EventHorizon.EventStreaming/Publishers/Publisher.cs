@@ -26,12 +26,6 @@ public class Publisher<T> : IAsyncDisposable
         _producer = factory.CreateProducer<T>(config);
     }
 
-    public Task PublishAsync(string streamId, params object[] objs)
-    {
-        var wrapped = objs.Select(x => Activator.CreateInstance(typeof(T), streamId, x) as T).ToArray();
-        return PublishAsync(wrapped);
-    }
-
     public async Task<Publisher<T>> PublishAsync(params T[] messages)
     {
         // Defensive

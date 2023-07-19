@@ -8,6 +8,7 @@ namespace Insperex.EventHorizon.EventSourcing.Senders;
 
 public class SenderConfig
 {
+    public int BatchSize { get; set; }
     public TimeSpan Timeout { get; set; }
     public Func<Request, HttpStatusCode, string, IResponse> GetErrorResult { get; set; }
 }

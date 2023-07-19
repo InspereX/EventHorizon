@@ -25,7 +25,7 @@ public class PulsarTopicResolver : ITopicResolver
 
     public string[] GetTopics<TM>(Type type, string topicName = null) where TM : ITopicMessage
     {
-        var persistent = typeof(TM).Name == EventStreamingConstants.Event
+        var persistent = typeof(TM).Name == "BatchEvent"
             ? EventStreamingConstants.Persistent
             : EventStreamingConstants.NonPersistent;
 

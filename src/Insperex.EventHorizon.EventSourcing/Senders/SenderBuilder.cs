@@ -16,6 +16,7 @@ public class SenderBuilder
     private readonly ILoggerFactory _loggerFactory;
     private Func<Request, HttpStatusCode, string, IResponse> _getErrorResult;
     private TimeSpan _timeout = TimeSpan.FromSeconds(120);
+    private int _batchSize = 1000;
 
     public SenderBuilder(SenderSubscriptionTracker subscriptionTracker, StreamingClient streamingClient, ILoggerFactory loggerFactory)
     {
@@ -36,12 +37,19 @@ public class SenderBuilder
         return this;
     }
 
+    public SenderBuilder BatchSize(int batchSize)
+    {
+        _batchSize = batchSize;
+        return this;
+    }
+
     public Sender Build()
     {
         var config = new SenderConfig
         {
             Timeout = _timeout,
-            GetErrorResult = _getErrorResult
+            GetErrorResult = _getErrorResult,
+            BatchSize = _batchSize
         };
 
         return new Sender(_subscriptionTracker, _streamingClient, config, _loggerFactory.CreateLogger<Sender>());

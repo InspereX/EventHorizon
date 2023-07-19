@@ -273,7 +273,8 @@ public class Aggregator<TParent, T>
         try
         {
             var publisher = GetPublisher<BatchEvent>(null);
-            await publisher.PublishAsync(new BatchEvent(Guid.NewGuid().ToString(), events));
+            var batches = new[] { new BatchEvent(Guid.NewGuid().ToString(), events) };
+            await publisher.PublishAsync(batches);
         }
         catch (Exception ex)
         {

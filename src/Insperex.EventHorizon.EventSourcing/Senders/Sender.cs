@@ -116,7 +116,10 @@ public class Sender
     {
         var key = $"{typeof(TM).Name}-{path}";
         if (!_publisherDict.ContainsKey(key))
-            _publisherDict[key] = _streamingClient.CreatePublisher<TM>().AddStream<T>(path).Build();
+            _publisherDict[key] = _streamingClient.CreatePublisher<TM>()
+                .BatchSize(_config.BatchSize)
+                .AddStream<T>(path)
+                .Build();
 
         return _publisherDict[key] as Publisher<TM>;
     }
