@@ -82,40 +82,6 @@ public class Aggregator<TParent, T>
         }
     }
 
-    // public async Task<BatchResponse[]> HandleBatchAsync(BatchRequest[] batches, CancellationToken ct)
-    // {
-    //     // Handle
-    //     var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
-    //     var responses = await HandleAsync(messages, ct);
-    //     if (responses?.Any() != true) return Array.Empty<BatchResponse>();
-    //
-    //     // Build Batch Responses
-    //     var responseDict = responses.ToDictionary(x => x.Id);
-    //     var batchResponses = batches
-    //         .Select(x => new BatchResponse(x.Id, x .SenderId, x.Unwrap()
-    //             .Select(s => responseDict[s.Id])
-    //             .ToArray()))
-    //         .ToArray();
-    //
-    //     return batchResponses;
-    // }
-    //
-    // public async Task<BatchResponse[]> HandleBatchAsync(BatchCommand[] batches, CancellationToken ct)
-    // {
-    //     // Handle
-    //     var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
-    //     await HandleAsync(messages, ct);
-    //     return Array.Empty<BatchResponse>();
-    // }
-    //
-    // public async Task<BatchResponse[]> HandleBatchAsync(BatchEvent[] batches, CancellationToken ct)
-    // {
-    //     var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
-    //     var publisher = GetPublisher<Event>(null);
-    //     await publisher.PublishAsync(messages);
-    //     return Array.Empty<BatchResponse>();
-    // }
-
     public async Task<BatchResponse> HandleAsync<TM>(Batch<TM> message, CancellationToken ct) where TM : class, ITopicMessage
     {
         var responses = await HandleAsync(new[] { message }, ct);
