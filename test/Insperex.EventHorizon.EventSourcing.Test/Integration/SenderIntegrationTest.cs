@@ -128,18 +128,23 @@ public class SenderIntegrationTest : IAsyncLifetime
 
     [Theory]
     // [InlineData(1,1, 1000)]
+
+    // [InlineData(1,10, 1000)]
     // [InlineData(1,100, 1000)]
     // [InlineData(1,1000, 1000)]
     // [InlineData(1,10000, 1000)]
-    // [InlineData(1,100000, 1000)]
+    [InlineData(1,100000, 1000)]
+    [InlineData(1,110000, 1000)]
+    [InlineData(1,120000, 1000)]
+
     // [InlineData(10,1000)]
     // [InlineData(10,10000)]
     // [InlineData(10,100000)]
 
-    [InlineData(100,1, 10)]
-    [InlineData(1000,1, 100)]
-    [InlineData(10000,1, 1000)]
-    [InlineData(100000,1, 10000)]
+    // [InlineData(100,1, 10)]
+    // [InlineData(1000,1, 100)]
+    // [InlineData(10000,1, 1000)]
+    // [InlineData(100000,1, 10000)]
     public async Task TestLargeSendAndReceiveAsync(int batch, int req, int batchSize)
     {
         var sender = _host.Services.GetRequiredService<SenderBuilder>()

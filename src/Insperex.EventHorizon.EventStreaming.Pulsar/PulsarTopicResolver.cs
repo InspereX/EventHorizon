@@ -8,6 +8,7 @@ using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Attributes;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Models;
+using Insperex.EventHorizon.EventStreaming.Util;
 
 namespace Insperex.EventHorizon.EventStreaming.Pulsar;
 
@@ -17,6 +18,8 @@ public class PulsarTopicResolver : ITopicResolver
     private const string DefaultTenant = "public";
     private const string DefaultNamespace = "default";
     private const string TypeKey = "$type";
+    private const string NamespaceKey = "$namespace";
+    private const string ActionKey = "$action";
 
     public PulsarTopicResolver(AttributeUtil attributeUtil)
     {
@@ -39,11 +42,7 @@ public class PulsarTopicResolver : ITopicResolver
                 var topic = topicName == null ? x.Topic : $"{x.Topic}-{topicName}";
                 var path = $"{persistent}://{tenant}/{@namespace}/{topic}";
 
-                // Replace $type to actual type
-                if (path.Contains(TypeKey))
-                    path = path.Replace(TypeKey,typeof(TM).Name);
-
-                return path;
+                return TopicUtil.TopicReplace(path, type, typeof(TM), type.Assembly);
             })
             .ToArray();
 
