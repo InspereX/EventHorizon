@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 
 namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages
