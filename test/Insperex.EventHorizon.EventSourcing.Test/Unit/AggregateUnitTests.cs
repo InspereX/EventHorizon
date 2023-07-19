@@ -109,7 +109,7 @@ public class AggregateUnitTests
     public void TestHandleCommand()
     {
         // Create Aggregate and Apply
-        var command = new Command(_streamId, new ChangeUserName("Bob")).Upgrade();
+        var command = new Command(_streamId, new ChangeUserName("Bob"));
         var agg = new Aggregate<User>(_streamId);
         agg.Handle(command);
 

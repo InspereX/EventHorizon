@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -18,8 +19,8 @@ namespace Insperex.EventHorizon.EventSourcing.Senders;
 public class SenderSubscriptionTracker : IAsyncDisposable
 {
     private readonly StreamingClient _streamingClient;
-    private readonly Dictionary<Type, Subscription<BatchResponse>> _subscriptionDict = new ();
-    private readonly Dictionary<string, Response> _responseDict = new ();
+    private readonly ConcurrentDictionary<Type, Subscription<BatchResponse>> _subscriptionDict = new ();
+    private readonly ConcurrentDictionary<string, Response> _responseDict = new ();
     private readonly string _senderId;
     private bool _cleaning;
 
@@ -48,7 +49,7 @@ public class SenderSubscriptionTracker : IAsyncDisposable
                 // Check Results
                 var responses = x.Messages
                     .Select(m => m.Data)
-                    .SelectMany(m => m.Unwrap())
+                    .SelectMany(m => m.Payload.Values)
                     .ToArray();
 
                 foreach (var response in responses)
@@ -60,17 +61,33 @@ public class SenderSubscriptionTracker : IAsyncDisposable
             .Build();
 
         // warmup
-        await _streamingClient.CreatePublisher<BatchResponse>()
+        var publisher = _streamingClient.CreatePublisher<BatchResponse>()
             .AddStream<T>(_senderId)
             .IsLoggingActivity(false)
             .IsGuaranteed(true)
-            .Build()
-            .PublishAsync(new BatchResponse("Warmup", _senderId, Array.Empty<Response>()));
+            .Build();
+
+        // for (var i = 0; i < 10; i++)
+        // {
+        //     const string id = "Warmup";
+        //     var req = new BatchResponse(id, id, _senderId, Array.Empty<Response>());
+        //     await publisher.PublishAsync(req);
+        // }
 
         _subscriptionDict[type] = subscription;
 
         await subscription.StartAsync();
     }
+
+
+    // public async Task<BatchResponse[]> GetResponses(BatchRequest[] requests)
+    // {
+    //     var responses = new List<BatchResponse>();
+    //     do
+    //     {
+    //
+    //     } while()
+    // }
 
     public Response[] GetResponses(Request[] requests, Func<Request, HttpStatusCode, string, IResponse> configGetErrorResult)
     {
@@ -80,10 +97,13 @@ public class SenderSubscriptionTracker : IAsyncDisposable
             if (_responseDict.TryGetValue(request.Id, out var value))
             {
                 // Add Response, Make Custom if needed
-                responses.Add(value.Error != null
-                    ? new Response(value.Id, value.SenderId, value.StreamId,
-                        configGetErrorResult(request, (HttpStatusCode)value.StatusCode, value.Error), value.Error, value.StatusCode)
-                    : value);
+                if (value.Error != null)
+                {
+                    var custom = configGetErrorResult(request, (HttpStatusCode)value.StatusCode, value.Error);
+                    value = new Response(value.Id, value.StreamId, custom, value.Error, value.StatusCode);
+                }
+
+                responses.Add(value);
             }
         }
 

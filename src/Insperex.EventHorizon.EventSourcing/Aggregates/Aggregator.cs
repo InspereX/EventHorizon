@@ -126,7 +126,7 @@ public class Aggregator<TParent, T>
     {
         var sw = Stopwatch.StartNew();
         // Load Aggregate
-        var streamIds = batches.SelectMany(x => x.Unwrap().Select(s => s.StreamId)).Distinct().ToArray();
+        var streamIds = batches.SelectMany(x => x.Payload.Values.Select(s => s.StreamId)).Distinct().ToArray();
         var aggregateDict = await GetAggregatesFromStatesAsync(streamIds, ct);
 
         // Map/Apply Changes
@@ -145,7 +145,7 @@ public class Aggregator<TParent, T>
         var responses = aggregateDict.Values.SelectMany(x => x.Responses).ToArray();
         var responseDict = responses.ToDictionary(x => x.Id);
         var batchResponses = batchRequests
-            .Select(x => new BatchResponse(x.StreamId, x.SenderId, x.Unwrap()
+            .Select(x => new BatchResponse(x.Id, x.StreamId, x.SenderId, x.Payload.Values
                 .Select(s => responseDict[s.Id])
                 .ToArray()))
             .ToArray();
@@ -155,7 +155,7 @@ public class Aggregator<TParent, T>
 
     private void TriggerHandle<TM>(Batch<TM>[] batches, Dictionary<string, Aggregate<T>> aggregateDict) where TM : class, ITopicMessage
     {
-        var messages = batches.SelectMany(x => x.Unwrap()).ToArray();
+        var messages = batches.SelectMany(x => x.Payload.Values).ToArray();
         foreach (var message in messages)
         {
             var agg = aggregateDict.GetValueOrDefault(message.StreamId);

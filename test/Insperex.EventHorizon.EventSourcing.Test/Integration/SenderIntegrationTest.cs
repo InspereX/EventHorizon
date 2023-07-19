@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +14,6 @@ using Insperex.EventHorizon.EventSourcing.Samples.Models.Actions;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
 using Insperex.EventHorizon.EventSourcing.Senders;
 using Insperex.EventHorizon.EventSourcing.Test.Fakers;
-using Insperex.EventHorizon.EventStore.Extensions;
 using Insperex.EventHorizon.EventStore.InMemory.Extensions;
 using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
@@ -129,8 +127,23 @@ public class SenderIntegrationTest : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData(100,10000)]
-    [InlineData(10000,100)]
+    // [InlineData(1,1)]
+    // [InlineData(1,100)]
+    // [InlineData(1,1000)]
+    // [InlineData(1,10000)]
+    [InlineData(1,100000)]
+    [InlineData(1,110000)]
+    [InlineData(1,120000)]
+    [InlineData(1,130000)]
+    [InlineData(1,140000)]
+    [InlineData(1,150000)]
+    // [InlineData(1,110000)]
+    // [InlineData(1,120000)]
+    // [InlineData(10,1)]
+    // [InlineData(100,1)]
+    // [InlineData(1000,1)]
+    // [InlineData(10000,1)]
+    // [InlineData(100000,1)]
     public async Task TestLargeSendAndReceiveAsync(int batch, int req)
     {
         // Batches

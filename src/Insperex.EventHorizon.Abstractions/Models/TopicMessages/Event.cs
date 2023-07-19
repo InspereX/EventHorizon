@@ -29,4 +29,6 @@ public class Event : ITopicMessage
     {
         SequenceId = sequenceId;
     }
+
+    public object GetPayload() => JsonSerializer.Deserialize(Payload, AssemblyUtil.ActionDict[Type]);
 }

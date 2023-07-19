@@ -71,16 +71,17 @@ public class Sender
             request.SenderId = _subscriptionTracker.GetSenderId();
 
         // Send requests
-        var batchRequestDict = batchRequests.SelectMany(x => x.Unwrap()).ToDictionary(x => x.Id);
+        var batchRequest = batchRequests.SelectMany(x => x.Payload.Values).ToArray();
         await GetPublisher<BatchRequest, T>(null).PublishAsync(batchRequests);
 
         // Wait for messages
         var sw = Stopwatch.StartNew();
         var responseDict = new Dictionary<string, Response>();
-        while (responseDict.Count != batchRequestDict.Count
+        var t = new TaskCompletionSource<bool>();
+        while (responseDict.Count != batchRequest.Length
                && sw.ElapsedMilliseconds < _config.Timeout.TotalMilliseconds)
         {
-            var requests = batchRequestDict.Values.ToArray();
+            var requests = batchRequest.ToArray();
             var responses = _subscriptionTracker.GetResponses(requests, _config.GetErrorResult);
             if (responses.Any())
             {
@@ -93,11 +94,11 @@ public class Sender
         }
 
         // Add Timed Out Results
-        foreach (var request in batchRequestDict.Values)
+        foreach (var request in batchRequest)
             if (!responseDict.ContainsKey(request.Id))
             {
                 var error = "Request Timed Out";
-                responseDict[request.Id] = new Response(request.Id, _subscriptionTracker.GetSenderId(), request.StreamId,
+                responseDict[request.Id] = new Response(request.Id, request.StreamId,
                     _config.GetErrorResult?.Invoke(request, HttpStatusCode.RequestTimeout, error), error, (int)HttpStatusCode.RequestTimeout);
             }
 

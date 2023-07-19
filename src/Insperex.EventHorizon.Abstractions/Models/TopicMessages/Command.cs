@@ -24,4 +24,6 @@ public class Command : ITopicMessage
         Payload = JsonSerializer.Serialize(payload);
         Type = payload.GetType().Name;
     }
+
+    public object GetPayload() => JsonSerializer.Deserialize(Payload, AssemblyUtil.ActionDict[Type]);
 }

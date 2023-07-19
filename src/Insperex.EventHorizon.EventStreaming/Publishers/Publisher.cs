@@ -49,31 +49,23 @@ public class Publisher<T> : IAsyncDisposable
             //     _typeName, messages.Length, _config.Topic, sw.ElapsedMilliseconds);
             // activity?.SetStatus(ActivityStatusCode.Ok);
 
-            var tcs = new TaskCompletionSource<bool?>();
-            messages.ToObservable()
+            var observable = messages.ToObservable()
                 .Buffer(_config.BatchSize)
-                .Subscribe(async x =>
+                .SelectMany(async x =>
                 {
-                    try
-                    {
-                        await _producer.SendAsync(x.ToArray());
-                    }
-                    catch (Exception e)
-                    {
-                        tcs.TrySetException(e);
-                    }
-                },
-                () =>
+                    await _producer.SendAsync(x.ToArray());
+                    return x;
+                })
+                .Finally(() =>
                 {
-                    tcs.SetResult(true);
-                    if(_config.IsLoggingActivity)
+                    if (_config.IsLoggingActivity)
                         _logger.LogInformation("Publisher - Sent {Type}(s) {Count} in {Duration} {Topic}",
-                        _typeName, messages.Length, sw.ElapsedMilliseconds, _config.Topic);
+                            _typeName, messages.Length, sw.ElapsedMilliseconds, _config.Topic);
                     activity?.SetStatus(ActivityStatusCode.Ok);
                     activity?.Dispose();
                 });
 
-            await tcs.Task;
+            await observable;
         }
         catch (Exception ex)
         {
