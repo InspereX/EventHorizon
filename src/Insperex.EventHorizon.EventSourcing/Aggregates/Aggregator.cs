@@ -6,6 +6,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces;
+using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
@@ -51,14 +52,14 @@ public class Aggregator<TParent, T>
         // NOTE: return with one ms forward because mongodb rounds to one ms
         minDateTime = minDateTime.AddMilliseconds(1);
 
-        var reader = _streamingClient.CreateReader<Event>().AddStream<T>().StartDateTime(minDateTime).Build();
+        var reader = _streamingClient.CreateReader<BatchEvent>().AddStream<T>().StartDateTime(minDateTime).Build();
 
         while (!ct.IsCancellationRequested)
         {
-            var events = await reader.GetNextAsync(1000);
-            if (!events.Any()) break;
+            var batchEvents = await reader.GetNextAsync(1000);
+            if (!batchEvents.Any()) break;
 
-            var lookup = events.ToLookup(x => x.Data.StreamId);
+            var lookup = batchEvents.SelectMany(x => x.Data.Payload.Values).ToLookup(x => x.StreamId, x => x);
             var streamIds = lookup.Select(x => x.Key).ToArray();
             var models = await _crudStore.GetAllAsync(streamIds, ct);
             var modelsDict = models.ToDictionary(x => x.Id);
@@ -70,14 +71,14 @@ public class Aggregator<TParent, T>
                     : new Aggregate<T>(streamId);
 
                 foreach (var message in lookup[streamId])
-                    agg.Apply(message.Data);
+                    agg.Apply((dynamic)message.GetPayload(), false);
 
                 dict[agg.Id] = agg;
             }
 
             if(! dict.Any()) return;
             await SaveSnapshotsAsync(dict);
-            await PublishEventsAsync(dict);
+            // await PublishEventsAsync(batchEvents.Select(x => x.Data).ToArray(), dict);
             ResetAll(dict);
         }
     }
@@ -99,7 +100,7 @@ public class Aggregator<TParent, T>
         TriggerHandle(batches, aggregateDict);
 
         // Save Successful Aggregates and Events
-        await SaveAllAsync(aggregateDict);
+        await SaveAllAsync(batches, aggregateDict);
 
         _logger.LogInformation("{State} Handled {Count} {Type} in {Duration}",
             typeof(T).Name, batches.Length, typeof(TM).Name, sw.ElapsedMilliseconds);
@@ -157,11 +158,11 @@ public class Aggregator<TParent, T>
 
     #region Save
 
-    private async Task SaveAllAsync(Dictionary<string, Aggregate<T>> aggregateDict)
+    private async Task SaveAllAsync<TM>(Batch<TM>[] batches, Dictionary<string, Aggregate<T>> aggregateDict) where TM : class, ITopicMessage
     {
         // Save Snapshots, Events, and Publish Responses for Successful Saves
         await SaveSnapshotsAsync(aggregateDict);
-        await PublishEventsAsync(aggregateDict);
+        await PublishEventsAsync((dynamic)batches, aggregateDict);
 
         // Log Groups of failed snapshots
         var aggStatusLookup = aggregateDict.Values.ToLookup(x => x.Error);
@@ -226,7 +227,7 @@ public class Aggregator<TParent, T>
         }
     }
 
-    private async Task PublishEventsAsync(Dictionary<string, Aggregate<T>> aggregateDict)
+    private async Task PublishEventsAsync<TM>(Batch<TM>[] batches, Dictionary<string, Aggregate<T>> aggregateDict) where TM : class, ITopicMessage
     {
         var events = aggregateDict.Values
             .Where(x => x.Error == null)
@@ -238,9 +239,17 @@ public class Aggregator<TParent, T>
 
         try
         {
+            var batchEvents = batches
+                .Select(x =>
+                {
+                    return new BatchEvent(x.StreamId, x.Payload.Values
+                        .SelectMany(s => aggregateDict[s.StreamId].Events)
+                        .ToArray());
+                })
+                .ToArray();
+
             var publisher = GetPublisher<BatchEvent>(null);
-            var batches = new[] { new BatchEvent(Guid.NewGuid().ToString(), events) };
-            await publisher.PublishAsync(batches);
+            await publisher.PublishAsync(batchEvents);
         }
         catch (Exception ex)
         {
