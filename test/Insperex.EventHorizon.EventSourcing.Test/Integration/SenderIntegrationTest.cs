@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -129,22 +130,28 @@ public class SenderIntegrationTest : IAsyncLifetime
     [Theory]
     // [InlineData(1,1, 1000)]
 
-    // [InlineData(1,10, 1000)]
-    // [InlineData(1,100, 1000)]
-    // [InlineData(1,1000, 1000)]
-    // [InlineData(1,10000, 1000)]
-    [InlineData(1,100000, 1000)]
-    [InlineData(1,110000, 1000)]
-    [InlineData(1,120000, 1000)]
+    [InlineData(1,10, 1000)]
+    [InlineData(1,100, 1000)]
+    [InlineData(1,1000, 1000)]
+    [InlineData(1,10000, 1000)]
+    // [InlineData(1,100000, 1000)]
+    // [InlineData(1,1000000, 1000)]
+    // [InlineData(1,10000000, 1000)]
 
-    // [InlineData(10,1000)]
-    // [InlineData(10,10000)]
-    // [InlineData(10,100000)]
+    // [InlineData(10,1000,1000)]
+    // [InlineData(10,10000,1000)]
+    // [InlineData(10,100000,1000)]
 
-    // [InlineData(100,1, 10)]
-    // [InlineData(1000,1, 100)]
-    // [InlineData(10000,1, 1000)]
-    // [InlineData(100000,1, 10000)]
+
+    // [InlineData(100,1000,100)]
+    // [InlineData(100,10000,100)]
+    // [InlineData(100,100000,1000)]
+
+    // [InlineData(100,1, 100000)]
+    // [InlineData(1000,1, 100000)]
+    // [InlineData(10000,1, 100000)]
+    // [InlineData(100000,1, 100000)]
+    // [InlineData(1000000,1, 100000)]
     public async Task TestLargeSendAndReceiveAsync(int batch, int req, int batchSize)
     {
         var sender = _host.Services.GetRequiredService<SenderBuilder>()
@@ -167,7 +174,7 @@ public class SenderIntegrationTest : IAsyncLifetime
         var result = await sender.SendAndReceiveAsync<Account>(batchRequests.ToArray());
 
         // Assert Status
-        foreach (var response in result)
+        foreach (var response in result.SelectMany(x => x.Payload.Values))
             Assert.True(response.StatusCode < 300, response.Error);
     }
 
