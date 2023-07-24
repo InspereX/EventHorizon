@@ -11,7 +11,6 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventStreaming;
-using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.Publishers;
 using Microsoft.Extensions.Logging;
 
@@ -58,10 +57,10 @@ public class Sender
     {
         var requests = objs.Select(x => new Request(streamId, x)).ToArray();
         var res = await SendAndReceiveAsync<T>(new BatchRequest(streamId, requests));
-        return res.Select(x => JsonSerializer.Deserialize<TR>(x.Payload)).ToArray();
+        return res.SelectMany(x => x.Payload).Select(x => JsonSerializer.Deserialize<TR>(x.Value.Payload)).ToArray();
     }
 
-    public async Task<Response[]> SendAndReceiveAsync<T>(params BatchRequest[] batchRequests) where T : IState
+    public async Task<BatchResponse[]> SendAndReceiveAsync<T>(params BatchRequest[] batchRequests) where T : IState
     {
         // Ensure subscription is ready
         await _subscriptionTracker.TrackSubscription<T>();
@@ -71,43 +70,10 @@ public class Sender
             request.SenderId = _subscriptionTracker.GetSenderId();
 
         // Send requests
-        var batchRequest = batchRequests.SelectMany(x => x.Payload.Values).ToArray();
         await GetPublisher<BatchRequest, T>(null).PublishAsync(batchRequests);
 
         // Wait for messages
-        var sw = Stopwatch.StartNew();
-        var responseDict = new Dictionary<string, Response>();
-        var t = new TaskCompletionSource<bool>();
-        while (responseDict.Count != batchRequest.Length
-               && sw.ElapsedMilliseconds < _config.Timeout.TotalMilliseconds)
-        {
-            var requests = batchRequest.ToArray();
-            var responses = _subscriptionTracker.GetResponses(requests, _config.GetErrorResult);
-            if (responses.Any())
-            {
-                // sw = Stopwatch.StartNew();
-                foreach (var response in responses)
-                    responseDict[response.Id] = response;
-            }
-
-            await Task.Delay(200);
-        }
-
-        // Add Timed Out Results
-        foreach (var request in batchRequest)
-            if (!responseDict.ContainsKey(request.Id))
-            {
-                var error = "Request Timed Out";
-                responseDict[request.Id] = new Response(request.Id, request.StreamId,
-                    _config.GetErrorResult?.Invoke(request, HttpStatusCode.RequestTimeout, error), error, (int)HttpStatusCode.RequestTimeout);
-            }
-
-        var errors = responseDict.Where(x => x.Value.Error != null).GroupBy(x => x.Value.Error).ToArray();
-        foreach (var group in errors)
-            _logger.LogError("Sender - Response Error(s) {Count} => {Error}", group.Count(), group.Key);
-
-        if(errors.Any() != true)
-            _logger.LogInformation("Sender - Received All Responses {Count} in {Duration}", responseDict.Count, sw.ElapsedMilliseconds);
+        var responseDict = await _subscriptionTracker.GetResponses(batchRequests, _config.Timeout, _config.GetErrorResult);
 
         return responseDict.Values.ToArray();
     }
