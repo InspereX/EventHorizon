@@ -242,9 +242,11 @@ public class Aggregator<TParent, T>
             var batchEvents = batches
                 .Select(x =>
                 {
-                    return new BatchEvent(x.StreamId, x.Payload.Values
-                        .SelectMany(s => aggregateDict[s.StreamId].Events)
-                        .ToArray());
+                    var events = x.Payload.Values.Select(s => s.StreamId)
+                        .Distinct()
+                        .SelectMany(id => aggregateDict[id].Events)
+                        .ToArray();
+                    return new BatchEvent(x.StreamId, events);
                 })
                 .ToArray();
 
