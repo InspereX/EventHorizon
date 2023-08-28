@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.Event
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.EventStore.Test", "test\Insperex.EventHorizon.EventStore.Test\Insperex.EventHorizon.EventStore.Test.csproj", "{C1994476-ED81-49D4-9A64-760EB58BFD09}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.EventStoreLegacy.Test", "test\Insperex.EventHorizon.EventStoreLegacy.Test\Insperex.EventHorizon.EventStoreLegacy.Test.csproj", "{C757FF9C-27E4-4449-9EAE-3F416BD183CA}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.EventStore.Ignite", "src\Insperex.EventHorizon.EventStore.Ignite\Insperex.EventHorizon.EventStore.Ignite.csproj", "{DC163149-65F5-4209-8721-697500348332}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.EventStore.MongoDb", "src\Insperex.EventHorizon.EventStore.MongoDb\Insperex.EventHorizon.EventStore.MongoDb.csproj", "{EEC3C846-9AFB-49F5-917B-4794D8E9259B}"
@@ -33,6 +35,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.EventSourcing.Test", "test\Insperex.EventHorizon.EventSourcing.Test\Insperex.EventHorizon.EventSourcing.Test.csproj", "{453EB397-3EDA-41A7-8860-DB8FC42866D7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.EventStore.ElasticSearch", "src\Insperex.EventHorizon.EventStore.ElasticSearch\Insperex.EventHorizon.EventStore.ElasticSearch.csproj", "{6A5510FF-442A-44D0-BEFA-C63A275F0FB4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.EventStore.ElasticSearchLegacy", "src\Insperex.EventHorizon.EventStore.ElasticSearchLegacy\Insperex.EventHorizon.EventStore.ElasticSearchLegacy.csproj", "{4C18D84F-6840-4A2E-8939-C6844D60C931}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insperex.EventHorizon.Abstractions", "src\Insperex.EventHorizon.Abstractions\Insperex.EventHorizon.Abstractions.csproj", "{99B78DA5-244B-4B1A-A56D-48DC31C282DF}"
 EndProject
@@ -131,6 +135,14 @@ Global
 		{8B1E3D6E-4C3B-4D71-819F-C9CE00951960}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B1E3D6E-4C3B-4D71-819F-C9CE00951960}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B1E3D6E-4C3B-4D71-819F-C9CE00951960}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C18D84F-6840-4A2E-8939-C6844D60C931}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C18D84F-6840-4A2E-8939-C6844D60C931}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C18D84F-6840-4A2E-8939-C6844D60C931}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C18D84F-6840-4A2E-8939-C6844D60C931}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C757FF9C-27E4-4449-9EAE-3F416BD183CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C757FF9C-27E4-4449-9EAE-3F416BD183CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C757FF9C-27E4-4449-9EAE-3F416BD183CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C757FF9C-27E4-4449-9EAE-3F416BD183CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EA54ECBF-4EF2-47D1-A12C-E31A5D3AD90F} = {8818B7D8-62A2-4ED9-BE26-2979D0194FAE}
@@ -151,5 +163,7 @@ Global
 		{71B20657-A8A5-46A3-A954-3D3AD9A50CD7} = {C2A2DA7E-F795-4F54-A6E9-CCA1755BE199}
 		{F6B5F4AF-ACF0-4F50-AE5B-B8FCAF5389CD} = {C2A2DA7E-F795-4F54-A6E9-CCA1755BE199}
 		{8B1E3D6E-4C3B-4D71-819F-C9CE00951960} = {8818B7D8-62A2-4ED9-BE26-2979D0194FAE}
+		{4C18D84F-6840-4A2E-8939-C6844D60C931} = {8818B7D8-62A2-4ED9-BE26-2979D0194FAE}
+		{C757FF9C-27E4-4449-9EAE-3F416BD183CA} = {E659EE4E-FE5F-4D60-BF2F-BC4DA6581EB1}
 	EndGlobalSection
 EndGlobal

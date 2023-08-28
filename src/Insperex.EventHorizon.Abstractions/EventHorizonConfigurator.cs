@@ -5,7 +5,7 @@ namespace Insperex.EventHorizon.Abstractions
 {
     public class EventHorizonConfigurator
     {
-        internal readonly IServiceCollection Collection;
+        public readonly IServiceCollection Collection;
         public EventHorizonConfigurator(IServiceCollection collection)
         {
             Collection = collection;
