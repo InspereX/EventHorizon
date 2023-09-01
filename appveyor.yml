@@ -20,7 +20,7 @@ services:
   - docker
 
 install:
-  - nohup sh -c "ls compose | xargs -P 5 -I {} docker-compose -f compose/{}/docker-compose.yml up -d >/dev/null"
+  - ls compose | xargs -P 5 -I {} docker-compose -f compose/{}/docker-compose.yml up -d
   - git clone -b develop --single-branch https://$github_apikey@github.com/insperex/TwoEightyCap.DevOps.Tools.git ~/tools
   - bash ~/tools/dist/shared/version.sh
   - bash ~/tools/dist/dotnet/install.sh
