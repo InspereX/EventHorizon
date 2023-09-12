@@ -19,7 +19,7 @@ services:
     cap_add:
       - IPC_LOCK
     volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
+      - elasticsearchlegacy-data:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
       - 9300:9300
