@@ -22,15 +22,15 @@ services:
       - 9200:9200
       - 9300:9300
 
-  kibana:
-    container_name: kibanalegacy
-    image: docker.elastic.co/kibana/kibana:7.5.0
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    ports:
-      - 5601:5601
-    depends_on:
-      - elasticsearch
+#  kibana:
+#    container_name: kibanalegacy
+#    image: docker.elastic.co/kibana/kibana:7.5.0
+#    environment:
+#      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+#    ports:
+#      - 5601:5601
+#    depends_on:
+#      - elasticsearch
 
 volumes:
   elasticsearch-data:
