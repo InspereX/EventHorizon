@@ -21,10 +21,7 @@ services:
 
 install:
   - ls compose | xargs -I {} docker-compose -f compose/{}/docker-compose.yml up -d
-  - echo '======== es 8'
-  - docker logs elasticsearch
-  - echo '======== es 7'
-  - docker logs elasticsearchlegacy
+  - docker ps -a
   - git clone -b develop --single-branch https://$github_apikey@github.com/insperex/TwoEightyCap.DevOps.Tools.git ~/tools
   - bash ~/tools/dist/shared/version.sh
   - bash ~/tools/dist/dotnet/install.sh
