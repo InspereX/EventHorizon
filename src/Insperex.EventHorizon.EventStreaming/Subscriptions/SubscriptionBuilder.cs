@@ -44,7 +44,7 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
         _topics.AddRange(_topicResolver.GetTopics<T>(typeof(TS), topic));
 
         // Add Sub Topics (for IState only)
-        var topics = AssemblyUtil.SubStateDict.GetValueOrDefault(typeof(TS).Name)?
+        var topics = AssemblyUtil.SubStateDict.GetValueOrDefault(typeof(TS))?
             .SelectMany(x => _topicResolver.GetTopics<T>(x, topic))
             .ToArray();
 

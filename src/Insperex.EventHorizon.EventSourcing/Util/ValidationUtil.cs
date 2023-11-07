@@ -47,7 +47,7 @@ public class ValidationUtil
         var errors = commandErrors.Concat(requestErrors).Concat(eventErrors).ToArray();
         if (!errors.Any()) return;
 
-        throw new MissingHandlersException(type, AssemblyUtil.SubStateDict[type.Name], types, errors);
+        throw new MissingHandlersException(type, AssemblyUtil.SubStateDict[type], types, errors);
     }
 
     public void ValidateView<T>()
@@ -60,7 +60,7 @@ public class ValidationUtil
         var errors = ValidateHandlers<T, Event>(types);
         if (!errors.Any()) return;
 
-        throw new MissingHandlersException(type, AssemblyUtil.SubStateDict[type.Name], types, errors);
+        throw new MissingHandlersException(type, AssemblyUtil.SubStateDict[type], types, errors);
     }
 
     private static string[] ValidateHandlers<T, TM>(params Type[] stateTypes)
@@ -69,7 +69,7 @@ public class ValidationUtil
     {
         // Handlers
         var type = typeof(T);
-        var allStates = AssemblyUtil.SubStateDict[type.Name].Append(type).ToArray();
+        var allStates = AssemblyUtil.SubStateDict[type].Append(type).ToArray();
 
         ImmutableDictionary<string, Dictionary<string, MethodInfo>> stateHandlerLookup;
         IDictionary<string, Type[]> stateActionLookup;

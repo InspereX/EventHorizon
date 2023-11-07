@@ -140,7 +140,7 @@ public class Aggregate<T>
         // Initialize Data
         State ??= Activator.CreateInstance<T>();
         State.Id = Id;
-        var properties = AssemblyUtil.PropertyDictOfStates[_type.Name];
+        var properties = AssemblyUtil.PropertyDictOfStates[_type];
         AllStates = properties
             .ToDictionary(x => x.Name, x =>
             {

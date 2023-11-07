@@ -39,12 +39,12 @@ public static class AssemblyUtil
         .Where(x => typeof(IAction).IsAssignableFrom(x.Value) && x.Value.IsClass)
         .ToImmutableDictionary(x => x.Key, x => x.Value);
 
-    public static readonly ImmutableDictionary<string, PropertyInfo[]> PropertyDictOfStates = TypeDictionary
+    public static readonly ImmutableDictionary<Type, PropertyInfo[]> PropertyDictOfStates = TypeDictionary
         .Where(x => typeof(IState).IsAssignableFrom(x.Value))
-        .ToImmutableDictionary(x => x.Key, x =>
+        .ToImmutableDictionary(x => x.Value, x =>
             x.Value.GetProperties().Where(p => p.PropertyType.GetInterface(nameof(IState)) != null).ToArray());
 
-    public static readonly ImmutableDictionary<string, Type[]> SubStateDict = PropertyDictOfStates
+    public static readonly ImmutableDictionary<Type, Type[]> SubStateDict = PropertyDictOfStates
         .ToImmutableDictionary(x => x.Key, x => x.Value.Select(s => s.PropertyType).ToArray());
 
 }
