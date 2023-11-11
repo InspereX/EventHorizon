@@ -12,8 +12,9 @@ namespace Insperex.EventHorizon.Abstractions.Util;
 public static class AssemblyUtil
 {
     private static readonly Assembly Assembly = Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();
+    public static readonly string AssemblyName = Assembly.GetName().Name;
 
-    public static readonly ImmutableDictionary<string, Type> TypeDictionary = DependencyContext.Default?.CompileLibraries
+    private static readonly Type[] Types = DependencyContext.Default?.CompileLibraries
         .SelectMany(x =>
         {
             try
@@ -26,25 +27,36 @@ public static class AssemblyUtil
             }
         })
         .Where(x => x != null)
-        .ToLookup(x => x.Name)
-        .ToImmutableDictionary(x => x.Key, x => x.Last());
+        .ToArray();
 
-    public static readonly string AssemblyName = Assembly.GetName().Name;
+    #region States
 
-    public static readonly ImmutableDictionary<string, Type> StateDict = TypeDictionary
-        .Where(x => typeof(IState).IsAssignableFrom(x.Value))
-        .ToImmutableDictionary(x => x.Key, x => x.Value);
+    public static Type[] States = Types.Where(x => typeof(IState).IsAssignableFrom(x)).ToArray();
 
-    public static readonly ImmutableDictionary<string, Type> ActionDict = TypeDictionary
-        .Where(x => typeof(IAction).IsAssignableFrom(x.Value) && x.Value.IsClass)
-        .ToImmutableDictionary(x => x.Key, x => x.Value);
+    public static readonly ImmutableDictionary<Type, PropertyInfo[]> StatePropertiesWithSubStates = States.ToImmutableDictionary(x => x, GetStatePropertiesWithState);
 
-    public static readonly ImmutableDictionary<string, PropertyInfo[]> PropertyDictOfStates = TypeDictionary
-        .Where(x => typeof(IState).IsAssignableFrom(x.Value))
-        .ToImmutableDictionary(x => x.Key, x =>
-            x.Value.GetProperties().Where(p => p.PropertyType.GetInterface(nameof(IState)) != null).ToArray());
-
-    public static readonly ImmutableDictionary<string, Type[]> SubStateDict = PropertyDictOfStates
+    public static readonly ImmutableDictionary<Type, Type[]> StateSubStates = StatePropertiesWithSubStates
         .ToImmutableDictionary(x => x.Key, x => x.Value.Select(s => s.PropertyType).ToArray());
 
+    private static PropertyInfo[] GetStatePropertiesWithState(Type type) => type.GetProperties()
+        .Where(p => p.PropertyType.GetInterface(nameof(IState)) != null)
+        .ToArray();
+
+    #endregion
+
+    #region Actions
+
+    public static Type[] Actions = Types.Where(x => typeof(IAction).IsAssignableFrom(x)).ToArray();
+
+    public static readonly Dictionary<Type, Type[]> StateToCommandsLookup = GetStatesToActionLookup(typeof(ICommand<>));
+    public static readonly Dictionary<Type, Type[]> StateToRequestsLookup = GetStatesToActionLookup(typeof(IRequest<,>));
+    public static readonly Dictionary<Type, Type[]> StateToEventsLookup = GetStatesToActionLookup(typeof(IEvent<>));
+
+    private static Dictionary<Type, Type[]> GetStatesToActionLookup(Type type) => States
+        .ToDictionary(x => x, x => Actions.Where(a => a.GetInterfaces().Any(i => i.IsGenericType
+                && i.GetGenericTypeDefinition() == type
+                && i.GetGenericArguments()[0].Name == x.Name))
+            .ToArray());
+
+    #endregion
 }

@@ -8,7 +8,6 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar.Models
         public const string DefaultTenant = "public";
         public const string DefaultNamespace = "default";
         public const string MessageNamespace = "message";
-        public const string TypeKey = "$type";
 
         public const int HashKey = 65536;
         public static readonly Type[] MessageTypes = new[]

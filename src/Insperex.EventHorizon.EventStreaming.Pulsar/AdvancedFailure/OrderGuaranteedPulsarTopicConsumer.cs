@@ -58,6 +58,7 @@ public class OrderGuaranteedPulsarTopicConsumer<T> : ITopicConsumer<T> where T :
     public OrderGuaranteedPulsarTopicConsumer(
         PulsarClientResolver clientResolver,
         SubscriptionConfig<T> config,
+        StreamUtil streamUtil,
         IStreamFactory streamFactory,
         ILoggerFactory loggerFactory)
     {
@@ -70,11 +71,8 @@ public class OrderGuaranteedPulsarTopicConsumer<T> : ITopicConsumer<T> where T :
             loggerFactory.CreateLogger<FailureStateTopic<T>>());
         _streamFailureState = new(_config, loggerFactory.CreateLogger<StreamFailureState<T>>(),
             failureStateTopic);
-        _primaryTopicConsumer = new(_streamFailureState, clientResolver,
-            loggerFactory.CreateLogger<PrimaryTopicConsumer<T>>(),
-            _config, _topicAdmin, _consumerName);
-        _failedMessageRetryConsumer = new(_config, _streamFailureState,
-            clientResolver, loggerFactory);
+        _primaryTopicConsumer = new(_streamFailureState, clientResolver, _config, streamUtil, _topicAdmin, _consumerName);
+        _failedMessageRetryConsumer = new(_config, _streamFailureState, clientResolver, streamUtil, loggerFactory);
 
         _phaseHandlers = new()
         {

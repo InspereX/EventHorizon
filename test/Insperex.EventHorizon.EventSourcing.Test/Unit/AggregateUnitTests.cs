@@ -4,12 +4,12 @@ using System.Net;
 using System.Text.Json;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Actions;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.View;
 using Insperex.EventHorizon.EventStore.Models;
-using Insperex.EventHorizon.EventStreaming.Extensions;
 using Xunit;
 
 namespace Insperex.EventHorizon.EventSourcing.Test.Unit;
@@ -18,10 +18,12 @@ namespace Insperex.EventHorizon.EventSourcing.Test.Unit;
 public class AggregateUnitTests
 {
     private readonly string _streamId;
+    private readonly StreamUtil _streamUtil;
 
     public AggregateUnitTests()
     {
         _streamId = "123";
+        _streamUtil = new StreamUtil(new AttributeUtil());
     }
 
     [Fact]
@@ -29,9 +31,9 @@ public class AggregateUnitTests
     {
         var events = Enumerable.Range(0, 5).Select(x => new AccountCredited(100)).ToArray();
         var eventWrappers = events.Select((x,i) => new Event(_streamId, i, x)).ToArray();
-        var messages = eventWrappers.Select(x => new MessageContext<Event>
+        var messages = eventWrappers.Select(x => new MessageContext<Event>(_streamUtil)
             { Data = x, TopicData = new TopicData(Guid.NewGuid().ToString(), "topic", DateTime.UtcNow) }).ToArray();
-        var aggregate = new Aggregate<Account>(messages);
+        var aggregate = new Aggregate<Account>(messages, _streamUtil);
 
         Assert.Equal(eventWrappers.Last().StreamId, aggregate.Id);
         Assert.Equal(eventWrappers.Last().SequenceId, aggregate.SequenceId);
@@ -44,7 +46,7 @@ public class AggregateUnitTests
     {
         var state = new Account { Id = _streamId, Amount = 100 };
         var snapshotWrapper = new Snapshot<Account>(state.Id, 1, state, DateTime.UtcNow.AddDays(-1), DateTime.UtcNow);
-        var aggregate = new Aggregate<Account>(snapshotWrapper);
+        var aggregate = new Aggregate<Account>(snapshotWrapper, _streamUtil);
 
         Assert.Equal(snapshotWrapper.Id, aggregate.Id);
         Assert.Equal(snapshotWrapper.SequenceId, aggregate.SequenceId);
@@ -58,13 +60,13 @@ public class AggregateUnitTests
     [Fact]
     public void TestAggregateFromOnlyStreamId()
     {
-        var aggregate = new Aggregate<Account>(_streamId);
+        var aggregate = new Aggregate<Account>(_streamId, _streamUtil);
 
         Assert.Equal(_streamId, aggregate.Id);
         Assert.Equal(0, aggregate.SequenceId);
         Assert.NotEqual(default, aggregate.CreatedDate);
         Assert.Equal(aggregate.CreatedDate, aggregate.UpdatedDate);
-        Assert.True(!aggregate.Exists());
+        Assert.False(aggregate.Exists());
     }
 
     [Fact]
@@ -72,7 +74,7 @@ public class AggregateUnitTests
     {
         // Create Aggregate and Apply
         var @event = new Event(_streamId, 1, new AccountOpened(100));
-        var agg = new Aggregate<AccountView>(_streamId);
+        var agg = new Aggregate<AccountView>(_streamId, _streamUtil);
         agg.Apply(@event);
 
         // Assert State and Agg
@@ -91,7 +93,7 @@ public class AggregateUnitTests
     {
         // Create Aggregate and Apply
         var @event = new Event(_streamId, 1, new AccountOpened(100));
-        var agg = new Aggregate<SearchAccountView>(_streamId);
+        var agg = new Aggregate<SearchAccountView>(_streamId, _streamUtil);
         agg.Apply(@event);
 
         // Assert State and Agg
@@ -109,8 +111,9 @@ public class AggregateUnitTests
     public void TestHandleCommand()
     {
         // Create Aggregate and Apply
-        var command = new Command(_streamId, new ChangeUserName("Bob")).Upgrade();
-        var agg = new Aggregate<User>(_streamId);
+        var topic = _streamUtil.GetTopic(typeof(ChangeUserName));
+        var command = _streamUtil.Upgrade(topic, new Command(_streamId, new ChangeUserName("Bob")));
+        var agg = new Aggregate<User>(_streamId, _streamUtil);
         agg.Handle(command);
 
         // Assert State and Agg
@@ -133,7 +136,7 @@ public class AggregateUnitTests
     {
         // Create Aggregate and Apply
         var request = new Request(_streamId, new OpenAccount(100));
-        var agg = new Aggregate<Account>(_streamId);
+        var agg = new Aggregate<Account>(_streamId, _streamUtil);
         agg.Handle(request);
 
         // Assert State and Agg
@@ -160,7 +163,7 @@ public class AggregateUnitTests
     {
         // Create Aggregate and Apply
         var request = new Request(_streamId, new Withdrawal(100));
-        var agg = new Aggregate<Account>(_streamId);
+        var agg = new Aggregate<Account>(_streamId, _streamUtil);
         agg.Handle(request);
 
         // Assert State and Agg
@@ -184,7 +187,7 @@ public class AggregateUnitTests
     {
         // Create Aggregate and Apply
         var request = new Request(_streamId, new OpenAccount(100));
-        var agg = new Aggregate<BankAccount>(_streamId);
+        var agg = new Aggregate<BankAccount>(_streamId, _streamUtil);
         agg.Handle(request);
 
         // Assert State and Agg

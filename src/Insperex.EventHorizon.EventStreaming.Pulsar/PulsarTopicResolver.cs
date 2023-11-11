@@ -2,6 +2,7 @@
 using System.Linq;
 using Insperex.EventHorizon.Abstractions.Attributes;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
+using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
@@ -33,7 +34,7 @@ public class PulsarTopicResolver : ITopicResolver
                     ? pulsarAttr?.Namespace ?? PulsarTopicConstants.DefaultNamespace
                     : PulsarTopicConstants.MessageNamespace;
                 var topic = topicName == null ? x.Topic : $"{x.Topic}-{topicName}";
-                return $"{persistent}://{tenant}/{@namespace}/{topic}".Replace(PulsarTopicConstants.TypeKey, typeof(TM).Name);
+                return $"{persistent}://{tenant}/{@namespace}/{topic}".Replace(StreamingConstants.TypeKey, typeof(TM).Name);
             })
             .ToArray();
 

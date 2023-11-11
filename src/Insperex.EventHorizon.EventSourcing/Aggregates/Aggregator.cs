@@ -9,6 +9,7 @@ using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStreaming;
@@ -22,6 +23,7 @@ public class Aggregator<TParent, T>
     where T : class, IState
 {
     private readonly AggregateConfig<T> _config;
+    private readonly StreamUtil _streamUtil;
     private readonly ICrudStore<TParent> _crudStore;
     private readonly ILogger<Aggregator<TParent, T>> _logger;
     private readonly StreamingClient _streamingClient;
@@ -31,11 +33,13 @@ public class Aggregator<TParent, T>
         ICrudStore<TParent> crudStore,
         StreamingClient streamingClient,
         AggregateConfig<T> config,
+        StreamUtil streamUtil,
         ILogger<Aggregator<TParent, T>> logger)
     {
         _crudStore = crudStore;
         _streamingClient = streamingClient;
         _config = config;
+        _streamUtil = streamUtil;
         _logger = logger;
     }
 
@@ -66,8 +70,8 @@ public class Aggregator<TParent, T>
             foreach (var streamId in streamIds)
             {
                 var agg = modelsDict.ContainsKey(streamId)
-                    ? new Aggregate<T>(modelsDict[streamId])
-                    : new Aggregate<T>(streamId);
+                    ? new Aggregate<T>(modelsDict[streamId], _streamUtil)
+                    : new Aggregate<T>(streamId, _streamUtil);
 
                 foreach (var message in lookup[streamId])
                     agg.Apply(message.Data);
@@ -295,7 +299,7 @@ public class Aggregator<TParent, T>
 
             // Build Aggregate Dict
             var aggregateDict = streamIds
-                .Select(x => parentDict.TryGetValue(x, out var value)? new Aggregate<T>(value) : new Aggregate<T>(x))
+                .Select(x => parentDict.TryGetValue(x, out var value)? new Aggregate<T>(value, _streamUtil) : new Aggregate<T>(x, _streamUtil))
                 .ToDictionary(x => x.Id);
 
             // OnCompleted Hook
@@ -320,7 +324,7 @@ public class Aggregator<TParent, T>
             return streamIds
                 .Select(x =>
                 {
-                    var agg = new Aggregate<T>(x);
+                    var agg = new Aggregate<T>(x, _streamUtil);
                     agg.SetStatus(HttpStatusCode.InternalServerError, ex.Message);
                     return agg;
                 })
@@ -343,7 +347,7 @@ public class Aggregator<TParent, T>
             .Select(x =>
             {
                 var e = eventLookup[x].ToArray();
-                return e.Any() ? new Aggregate<T>(e.ToArray()) : new Aggregate<T>(x);
+                return e.Any() ? new Aggregate<T>(e.ToArray(), _streamUtil) : new Aggregate<T>(x, _streamUtil);
             })
             .ToDictionary(x => x.Id);
     }

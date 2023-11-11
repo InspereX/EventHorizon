@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Models;
@@ -27,8 +28,8 @@ internal sealed class PrimaryTopicConsumer<T>: ITopicConsumer<T> where T : ITopi
 {
     private readonly StreamFailureState<T> _streamFailureState;
     private readonly PulsarClientResolver _clientResolver;
-    private readonly ILogger<PrimaryTopicConsumer<T>> _logger;
     private readonly SubscriptionConfig<T> _config;
+    private readonly StreamUtil _streamUtil;
     private readonly ITopicAdmin<T> _admin;
     private readonly string _consumerName;
     private readonly OtelConsumerInterceptor.OTelConsumerInterceptor<T> _intercept;
@@ -39,15 +40,15 @@ internal sealed class PrimaryTopicConsumer<T>: ITopicConsumer<T> where T : ITopi
     public PrimaryTopicConsumer(
         StreamFailureState<T> streamFailureState,
         PulsarClientResolver clientResolver,
-        ILogger<PrimaryTopicConsumer<T>> logger,
         SubscriptionConfig<T> config,
+        StreamUtil streamUtil,
         ITopicAdmin<T> admin,
         string consumerName)
     {
         _streamFailureState = streamFailureState;
         _clientResolver = clientResolver;
-        _logger = logger;
         _config = config;
+        _streamUtil = streamUtil;
         _admin = admin;
         _consumerName = consumerName;
         _intercept = new OtelConsumerInterceptor.OTelConsumerInterceptor<T>(
@@ -91,7 +92,7 @@ internal sealed class PrimaryTopicConsumer<T>: ITopicConsumer<T> where T : ITopi
 
             var contexts = messagesToRelay
                 .Select(x =>
-                    new MessageContext<T>
+                    new MessageContext<T>(_streamUtil)
                     {
                         Data = x.Data,
                         TopicData = PulsarMessageMapper.MapTopicData(

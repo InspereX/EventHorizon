@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Utils;
 using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Logging;
@@ -35,12 +36,12 @@ public class RetryTopicReader<T>: IAsyncDisposable where T : class, ITopicMessag
 
     private readonly Dictionary<string, IReader<T>> _readers = new();
     private readonly PulsarClientResolver _clientResolver;
-    private readonly ILogger<RetryTopicReader<T>> _logger;
+    private readonly StreamUtil _streamUtil;
 
-    public RetryTopicReader(PulsarClientResolver clientResolver, ILogger<RetryTopicReader<T>> logger)
+    public RetryTopicReader(PulsarClientResolver clientResolver, StreamUtil streamUtil)
     {
         _clientResolver = clientResolver;
-        _logger = logger;
+        _streamUtil = streamUtil;
     }
 
     public async Task<MessageContext<T>[]> GetNextAsync(TopicStreamState[] topicStreams, int batchSize,
@@ -66,7 +67,7 @@ public class RetryTopicReader<T>: IAsyncDisposable where T : class, ITopicMessag
                     //_logger.LogInformation("Reader: got msg: {message}", MsgToStr(message, topic));
                     var sequenceId = message.SequenceId.ToString(CultureInfo.InvariantCulture);
 
-                    messages.Add(new MessageContext<T>
+                    messages.Add(new MessageContext<T>(_streamUtil)
                     {
                         Data = data,
                         TopicData = PulsarMessageMapper.MapTopicData(sequenceId, message, topic)

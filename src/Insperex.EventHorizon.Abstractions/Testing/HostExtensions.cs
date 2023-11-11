@@ -12,8 +12,8 @@ public static class HostExtensions
     {
         postfix ??= $"_{Guid.NewGuid().ToString()[..8]}";
         var attributeUtil = host.Services.GetRequiredService<AttributeUtil>();
-        TestUtil.SetTestBucketIds(attributeUtil, postfix, AssemblyUtil.StateDict.Values.ToArray());
-        TestUtil.SetTestBucketIds(attributeUtil, postfix, AssemblyUtil.ActionDict.Values.ToArray());
+        TestUtil.SetTestBucketIds(attributeUtil, postfix, AssemblyUtil.States);
+        TestUtil.SetTestBucketIds(attributeUtil, postfix, AssemblyUtil.Actions);
         return host;
     }
 }

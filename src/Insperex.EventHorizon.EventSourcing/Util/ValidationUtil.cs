@@ -40,6 +40,7 @@ public class ValidationUtil
     {
         var type = typeof(T);
         var types = new[] { type };
+        var streamAttr = _attributeUtil.GetOne<StreamAttribute>(typeof(T));
         var commandErrors = ValidateHandlers<T, Command>(types);
         var requestErrors = ValidateHandlers<T, Request>(types);
         var eventErrors = ValidateHandlers<T, Event>(types);
@@ -47,20 +48,20 @@ public class ValidationUtil
         var errors = commandErrors.Concat(requestErrors).Concat(eventErrors).ToArray();
         if (!errors.Any()) return;
 
-        throw new MissingHandlersException(type, AssemblyUtil.SubStateDict[type.Name], types, errors);
+        throw new MissingHandlersException(type, AssemblyUtil.StateSubStates[type], types, errors);
     }
 
     public void ValidateView<T>()
         where T : IState
     {
         var type = typeof(T);
-        var eventAttrs = _attributeUtil.GetAll<StreamAttribute>(typeof(T));
-        var types = eventAttrs.Select(x => x.SubType).ToArray();
+        var streamAttrs = _attributeUtil.GetAll<StreamAttribute>(typeof(T));
+        var types = streamAttrs.Select(x => x.SourceType).ToArray();
 
         var errors = ValidateHandlers<T, Event>(types);
         if (!errors.Any()) return;
 
-        throw new MissingHandlersException(type, AssemblyUtil.SubStateDict[type.Name], types, errors);
+        throw new MissingHandlersException(type, AssemblyUtil.StateSubStates[type], types, errors);
     }
 
     private static string[] ValidateHandlers<T, TM>(params Type[] stateTypes)
@@ -69,29 +70,29 @@ public class ValidationUtil
     {
         // Handlers
         var type = typeof(T);
-        var allStates = AssemblyUtil.SubStateDict[type.Name].Append(type).ToArray();
+        var allStates = AssemblyUtil.StateSubStates[type].Append(type).ToArray();
 
-        ImmutableDictionary<string, Dictionary<string, MethodInfo>> stateHandlerLookup;
-        IDictionary<string, Type[]> stateActionLookup;
+        ImmutableDictionary<Type, Dictionary<Type, MethodInfo>> stateHandlerLookup;
+        IDictionary<Type, Type[]> stateActionLookup;
         Func<Type, string> getErrorMessage;
 
         // Register Handlers
         if (typeof(TM) == typeof(Command))
         {
             stateHandlerLookup = AggregateAssemblyUtil.StateToCommandHandlersDict;
-            stateActionLookup = AggregateAssemblyUtil.StateToCommandsLookup;
+            stateActionLookup = AssemblyUtil.StateToCommandsLookup;
             getErrorMessage = type => $"IHandleCommand<{type.Name}>";
         }
         else if (typeof(TM) == typeof(Request))
         {
             stateHandlerLookup = AggregateAssemblyUtil.StateToRequestHandlersDict;
-            stateActionLookup = AggregateAssemblyUtil.StateToRequestsLookup;
+            stateActionLookup = AssemblyUtil.StateToRequestsLookup;
             getErrorMessage = type => $"IHandleRequest<{type.Name},{type.GetInterfaces().First().GetGenericArguments()[0].Name}>";
         }
         else if (typeof(TM) == typeof(Event))
         {
             stateHandlerLookup = AggregateAssemblyUtil.StateToEventHandlersDict;
-            stateActionLookup = AggregateAssemblyUtil.StateToEventsLookup;
+            stateActionLookup = AssemblyUtil.StateToEventsLookup;
             getErrorMessage = type => $"IApplyEvent<{type.Name}>";
         }
         else
@@ -102,12 +103,12 @@ public class ValidationUtil
         // Verify Actions are supported
         var supportedActions =  allStates
             // Get Handlers
-            .Select(state => stateHandlerLookup[state.Name])
+            .Select(state => stateHandlerLookup[state])
             .SelectMany(x => x)
             // Get Handler First Parameter
             .Select(x => x.Value?.GetParameters()[0].ParameterType).Distinct().ToArray();
 
-        var allActions = stateTypes.SelectMany(x => stateActionLookup[x.Name])
+        var allActions = stateTypes.SelectMany(x => stateActionLookup[x])
             // Ignore those with IUpgradeTo
             .Where(x => x.GetInterfaces().All(i => i.Name != typeof(IUpgradeTo<>).Name))
             .Distinct()

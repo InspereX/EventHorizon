@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Utils;
@@ -24,6 +25,7 @@ public class PulsarTopicConsumer<T> : ITopicConsumer<T> where T : ITopicMessage,
 {
     private readonly PulsarClientResolver _clientResolver;
     private readonly SubscriptionConfig<T> _config;
+    private readonly StreamUtil _streamUtil;
     private readonly ITopicAdmin<T> _admin;
     private readonly OtelConsumerInterceptor.OTelConsumerInterceptor<T> _intercept;
     private IConsumer<T> _consumer;
@@ -32,10 +34,12 @@ public class PulsarTopicConsumer<T> : ITopicConsumer<T> where T : ITopicMessage,
     public PulsarTopicConsumer(
         PulsarClientResolver clientResolver,
         SubscriptionConfig<T> config,
+        StreamUtil streamUtil,
         ITopicAdmin<T> admin)
     {
         _clientResolver = clientResolver;
         _config = config;
+        _streamUtil = streamUtil;
         _admin = admin;
         _intercept = new OtelConsumerInterceptor.OTelConsumerInterceptor<T>(
             TraceConstants.ActivitySourceName, PulsarClient.Logger);
@@ -61,7 +65,7 @@ public class PulsarTopicConsumer<T> : ITopicConsumer<T> where T : ITopicMessage,
                     var topic = _config.Topics.Length == 1 ? _config.Topics.First() : x.MessageId.TopicName;
 
                     var id = Guid.NewGuid().ToString();
-                    var context = new MessageContext<T>
+                    var context = new MessageContext<T>(_streamUtil)
                     {
                         Data = x.GetValue(),
                         TopicData = PulsarMessageMapper.MapTopicData(id, x, topic)

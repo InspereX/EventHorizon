@@ -5,13 +5,20 @@ using System.Globalization;
 using System.Linq;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.Abstractions.Util;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventStreaming.InMemory.Databases;
 
 public class MessageDatabase
 {
+    private readonly StreamUtil _streamUtil;
     private readonly ConcurrentDictionary<string, List<object>> _messages = new();
+
+    public MessageDatabase(StreamUtil streamUtil)
+    {
+        _streamUtil = streamUtil;
+    }
 
     public void AddMessages<T>(string topic, params T[] messages) where T : class, ITopicMessage
     {
@@ -20,7 +27,7 @@ public class MessageDatabase
 
         foreach (var message in messages)
         {
-            var context = new MessageContext<T>
+            var context = new MessageContext<T>(_streamUtil)
             {
                 Data = message,
                 TopicData = new TopicData(

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Insperex.EventHorizon.Abstractions.Interfaces;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventSourcing.Interfaces;
 using Insperex.EventHorizon.EventSourcing.Util;
 using Insperex.EventHorizon.EventStore.Interfaces;
@@ -29,6 +30,7 @@ public class AggregateBuilder<TParent, T>
     private readonly LockFactory<T> _lockFactory;
     private int? _batchSize;
     private readonly ILogger<AggregateBuilder<TParent, T>> _logger;
+    private readonly StreamUtil _streamUtil;
 
     public AggregateBuilder(
         IServiceProvider serviceProvider,
@@ -40,6 +42,7 @@ public class AggregateBuilder<TParent, T>
             (ICrudStore<TParent>)serviceProvider.GetRequiredService<IViewStoreFactory<T>>().GetViewStore();
         _lockFactory = serviceProvider.GetRequiredService<LockFactory<T>>();
         _validationUtil = serviceProvider.GetRequiredService<ValidationUtil>();
+        _streamUtil = serviceProvider.GetRequiredService<StreamUtil>();
         _serviceProvider = serviceProvider;
         _streamingClient = streamingClient;
         _loggerFactory = loggerFactory;
@@ -93,6 +96,6 @@ public class AggregateBuilder<TParent, T>
             _validationUtil.Validate<TParent, T>();
 
         var logger = _loggerFactory.CreateLogger<Aggregator<TParent, T>>();
-        return new Aggregator<TParent, T>(_crudStore, _streamingClient, config, logger);
+        return new Aggregator<TParent, T>(_crudStore, _streamingClient, config, _streamUtil, logger);
     }
 }

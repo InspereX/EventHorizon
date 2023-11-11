@@ -40,11 +40,13 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
 
     public SubscriptionBuilder<T> AddStream<TS>(string topic = null)
     {
+        var streamType = typeof(TS);
+
         // Add Main Topic
-        _topics.AddRange(_topicResolver.GetTopics<T>(typeof(TS), topic));
+        _topics.AddRange(_topicResolver.GetTopics<T>(streamType, topic));
 
         // Add Sub Topics (for IState only)
-        var topics = AssemblyUtil.SubStateDict.GetValueOrDefault(typeof(TS).Name)?
+        var topics = AssemblyUtil.StateSubStates.GetValueOrDefault(streamType)?
             .SelectMany(x => _topicResolver.GetTopics<T>(x, topic))
             .ToArray();
 

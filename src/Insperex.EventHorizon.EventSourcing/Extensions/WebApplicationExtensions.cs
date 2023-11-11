@@ -71,7 +71,7 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions
                 .Produces(StatusCodes.Status500InternalServerError);
 
             // Map Requests
-            var requests = AssemblyUtil.ActionDict.Values
+            var requests = AssemblyUtil.Actions
                 .Where(x => x.GetInterfaces().Any(i => i.Name == typeof(IRequest<,>).Name &&  i.GetGenericArguments()[0] == type))
                 .ToDictionary(x => x, x => x.GetInterfaces().FirstOrDefault(i => i.Name == typeof(IRequest<,>).Name));
             var methodReq = typeof(WebApplicationExtensions).GetMethod("MapRequest", BindingFlags.Static | BindingFlags.NonPublic);
@@ -83,7 +83,7 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions
             }
 
             // Map Commands
-            var commands = AssemblyUtil.ActionDict.Values
+            var commands = AssemblyUtil.Actions
                 .Where(x => x.GetInterfaces().Any(i => i.Name == typeof(ICommand<>).Name &&  i.GetGenericArguments()[0] == type))
                 .ToDictionary(x => x, x => x.GetInterfaces().FirstOrDefault(i => i.Name == typeof(ICommand<>).Name));
             var methodCmd = typeof(WebApplicationExtensions).GetMethod("MapCommand", BindingFlags.Static | BindingFlags.NonPublic);
