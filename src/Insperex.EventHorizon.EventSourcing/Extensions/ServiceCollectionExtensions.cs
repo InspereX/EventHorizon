@@ -2,6 +2,7 @@
 using Insperex.EventHorizon.Abstractions;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.Senders;
 using Insperex.EventHorizon.EventSourcing.Util;
@@ -22,6 +23,7 @@ public static class ServiceCollectionExtensions
         configurator.Collection.TryAddSingleton<SenderBuilder>();
         configurator.Collection.TryAddSingleton<SenderSubscriptionTracker>();
         configurator.Collection.TryAddSingleton<ValidationUtil>();
+        configurator.Collection.TryAddSingleton<StreamUtil>();
 
         return configurator;
     }
