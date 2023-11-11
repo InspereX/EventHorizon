@@ -36,6 +36,7 @@ public class Aggregate<T>
     {
         _streamUtil = streamUtil;
         _topic = _streamUtil.GetTopic(typeof(T));
+
         Id = streamId;
         CreatedDate = UpdatedDate = DateTime.UtcNow;
         Setup();
@@ -68,13 +69,15 @@ public class Aggregate<T>
 
         // Apply Events
         foreach (var @event in events)
-            Apply(@event.Data, false);
+            Apply(@event.Data, @event.TopicData?.Topic, false);
     }
 
-    public void Handle(Command command)
+    public void Handle(Command command, string topic = default)
     {
+        topic ??= _topic;
+
         // Try Self
-        var payload = _streamUtil.GetPayload(_topic, command);
+        var payload = _streamUtil.GetPayload(topic, command);
         foreach (var state in AllStates)
         {
             var context = new AggregateContext(Exists());
@@ -85,10 +88,12 @@ public class Aggregate<T>
         }
     }
 
-    public void Handle(Request request)
+    public void Handle(Request request, string topic = default)
     {
+        topic ??= _topic;
+
         // Try Self
-        var payload = _streamUtil.GetPayload(_topic, request);
+        var payload = _streamUtil.GetPayload(topic, request);
         foreach (var state in AllStates)
         {
             var context = new AggregateContext(Exists());
@@ -96,19 +101,21 @@ public class Aggregate<T>
             var result = method?.Invoke(state.Value, parameters: new [] { payload, context } );
             Responses.Add(new Response(request.Id, request.SenderId, Id, result, Error, (int)StatusCode));
             foreach(var item in context.Events)
-                Apply(new Event(Id, SequenceId, item));
+                Apply(new Event(Id, SequenceId, item), topic);
         }
     }
 
-    public void Apply(IEvent<T> @event)
+    public void Apply(IEvent<T> @event, string topic = default)
     {
-        Apply(new Event(Id, ++SequenceId, @event));
+        Apply(new Event(Id, ++SequenceId, @event), topic);
     }
 
-    public void Apply(Event @event, bool isFirstTime = true)
+    public void Apply(Event @event, string topic = default, bool isFirstTime = true)
     {
+        topic ??= _topic;
+
         // Try Self
-        var payload = _streamUtil.GetPayload(_topic, @event);
+        var payload = _streamUtil.GetPayload(topic, @event);
         foreach (var state in AllStates)
         {
             var method = AggregateAssemblyUtil.StateToEventHandlersDict.GetValueOrDefault(state.Key)?.GetValueOrDefault(payload.GetType());

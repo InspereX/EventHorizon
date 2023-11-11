@@ -33,7 +33,7 @@ public class AggregateConsumerHostedService<TParent, TAction, T> : IHostedServic
             .AddStream<T>()
             .OnBatch(async x =>
             {
-                var messages = x.Messages.Select(m => m.Data).ToArray();
+                var messages = x.Messages.Select(m => m).ToArray();
                 var responses = await aggregator.HandleAsync(messages, x.CancellationToken);
                 await aggregator.PublishResponseAsync(responses);
             });

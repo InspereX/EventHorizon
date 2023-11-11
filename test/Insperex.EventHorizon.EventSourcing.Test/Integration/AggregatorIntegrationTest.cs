@@ -5,8 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Destructurama;
 using Insperex.EventHorizon.Abstractions.Extensions;
+using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Testing;
+using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.Extensions;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Actions;
@@ -125,9 +127,12 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         var command1 = new Command(streamId, new ChangeUserName("Bob"));
         var command2 = new Command(streamId, new ChangeUserName("Joe"));
 
+        var streamUtil = new StreamUtil(new AttributeUtil());
+
+
         // Act
-        var res1 = await _userAggregator.HandleAsync(command1, CancellationToken.None);
-        var res2 = await _userAggregator.HandleAsync(command2, CancellationToken.None);
+        var res1 = await _userAggregator.HandleAsync(new MessageContext<Command>(streamUtil) { Data = command1 }, CancellationToken.None);
+        var res2 = await _userAggregator.HandleAsync(new MessageContext<Command>(streamUtil) { Data = command2 }, CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _userAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);
@@ -147,7 +152,8 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         var @event = new Event(streamId, 1, new AccountOpened(100));
 
         // Act
-        var res = await _accountAggregator.HandleAsync(@event, CancellationToken.None);
+        var streamUtil = new StreamUtil(new AttributeUtil());
+        var res = await _accountAggregator.HandleAsync(new MessageContext<Event>(streamUtil) { Data = @event }, CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _accountAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);

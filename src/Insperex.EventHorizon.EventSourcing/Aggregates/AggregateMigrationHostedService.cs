@@ -26,12 +26,8 @@ namespace Insperex.EventHorizon.EventSourcing.Aggregates
                 .SubscriptionName($"Migrate-{typeof(TSource).Name}-{typeof(TTarget).Name}")
                 .OnBatch(async batch =>
                 {
-                    var events = batch.Messages
-                        .Select(x => x.Data)
-                        .ToArray();
-
                     var responses = await aggregator
-                        .HandleAsync(events, batch.CancellationToken);
+                        .HandleAsync(batch.Messages, batch.CancellationToken);
 
                     var failedIds = responses
                         .Where(x => x.Error != null)

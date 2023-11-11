@@ -86,16 +86,16 @@ public class Aggregator<TParent, T>
         }
     }
 
-    public async Task<Response> HandleAsync<TM>(TM message, CancellationToken ct) where TM : ITopicMessage
+    public async Task<Response> HandleAsync<TM>(MessageContext<TM> message, CancellationToken ct) where TM : ITopicMessage
     {
         var responses = await HandleAsync(new[] { message }, ct);
         return responses.FirstOrDefault();
     }
 
-    public async Task<Response[]> HandleAsync<TM>(TM[] messages, CancellationToken ct) where TM : ITopicMessage
+    public async Task<Response[]> HandleAsync<TM>(MessageContext<TM>[] messages, CancellationToken ct) where TM : ITopicMessage
     {
         // Load Aggregate
-        var streamIds = messages.Select(x => x.StreamId).Distinct().ToArray();
+        var streamIds = messages.Select(x => x.Data.StreamId).Distinct().ToArray();
         var aggregateDict = await GetAggregatesFromStatesAsync(streamIds, ct);
 
         // Map/Apply Changes
@@ -107,21 +107,21 @@ public class Aggregator<TParent, T>
         return  aggregateDict.Values.SelectMany(x => x.Responses).ToArray();
     }
 
-    private void TriggerHandle<TM>(TM[] messages, Dictionary<string, Aggregate<T>> aggregateDict) where TM : ITopicMessage
+    private void TriggerHandle<TM>(MessageContext<TM>[] messages, Dictionary<string, Aggregate<T>> aggregateDict) where TM : ITopicMessage
     {
         var sw = Stopwatch.StartNew();
         foreach (var message in messages)
         {
-            var agg = aggregateDict.GetValueOrDefault(message.StreamId);
+            var agg = aggregateDict.GetValueOrDefault(message.Data.StreamId);
             if (agg.Error != null)
                 continue;
             try
             {
-                switch (message)
+                switch (message.Data)
                 {
-                    case Command command: agg.Handle(command); break;
-                    case Request request: agg.Handle(request); break;
-                    case Event @event: agg.Apply(@event, false); break;
+                    case Command command: agg.Handle(command, message.TopicData.Topic); break;
+                    case Request request: agg.Handle(request, message.TopicData.Topic); break;
+                    case Event @event: agg.Apply(@event, message.TopicData.Topic, false); break;
                 }
             }
             catch (Exception e)

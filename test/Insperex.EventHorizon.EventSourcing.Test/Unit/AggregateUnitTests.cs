@@ -32,7 +32,7 @@ public class AggregateUnitTests
         var events = Enumerable.Range(0, 5).Select(x => new AccountCredited(100)).ToArray();
         var eventWrappers = events.Select((x,i) => new Event(_streamId, i, x)).ToArray();
         var messages = eventWrappers.Select(x => new MessageContext<Event>(_streamUtil)
-            { Data = x, TopicData = new TopicData(Guid.NewGuid().ToString(), "topic", DateTime.UtcNow) }).ToArray();
+            { Data = x }).ToArray();
         var aggregate = new Aggregate<Account>(messages, _streamUtil);
 
         Assert.Equal(eventWrappers.Last().StreamId, aggregate.Id);
@@ -75,7 +75,7 @@ public class AggregateUnitTests
         // Create Aggregate and Apply
         var @event = new Event(_streamId, 1, new AccountOpened(100));
         var agg = new Aggregate<AccountView>(_streamId, _streamUtil);
-        agg.Apply(@event);
+        agg.Apply(@event, _streamUtil.GetTopic(typeof(Account)));
 
         // Assert State and Agg
         var expected = JsonSerializer.Deserialize<OpenAccount>(@event.Payload);
@@ -94,7 +94,7 @@ public class AggregateUnitTests
         // Create Aggregate and Apply
         var @event = new Event(_streamId, 1, new AccountOpened(100));
         var agg = new Aggregate<SearchAccountView>(_streamId, _streamUtil);
-        agg.Apply(@event);
+        agg.Apply(@event, _streamUtil.GetTopic(typeof(Account)));
 
         // Assert State and Agg
         var expected = JsonSerializer.Deserialize<OpenAccount>(@event.Payload);
@@ -111,7 +111,7 @@ public class AggregateUnitTests
     public void TestHandleCommand()
     {
         // Create Aggregate and Apply
-        var topic = _streamUtil.GetTopic(typeof(ChangeUserName));
+        var topic = _streamUtil.GetTopic(typeof(User));
         var command = _streamUtil.Upgrade(topic, new Command(_streamId, new ChangeUserName("Bob")));
         var agg = new Aggregate<User>(_streamId, _streamUtil);
         agg.Handle(command);
@@ -188,7 +188,7 @@ public class AggregateUnitTests
         // Create Aggregate and Apply
         var request = new Request(_streamId, new OpenAccount(100));
         var agg = new Aggregate<BankAccount>(_streamId, _streamUtil);
-        agg.Handle(request);
+        agg.Handle(request, _streamUtil.GetTopic(typeof(Account)));
 
         // Assert State and Agg
         var expected = JsonSerializer.Deserialize<OpenAccount>(request.Payload);
