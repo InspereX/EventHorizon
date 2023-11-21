@@ -70,11 +70,8 @@ public class PulsarTopicReader<T> : ITopicReader<T> where T : ITopicMessage, new
                 && PulsarMessageMapper.PublishDateFromTimestamp(message.PublishTime) > _config.EndDateTime)
                 break;
 
-            list.Add(new MessageContext<T>(_streamUtil)
-            {
-                Data = message.GetValue(),
-                TopicData = PulsarMessageMapper.MapTopicData(list.Count.ToString(CultureInfo.InvariantCulture), message, _config.Topic)
-            });
+            var topicData = PulsarMessageMapper.MapTopicData(list.Count.ToString(CultureInfo.InvariantCulture), message, _config.Topic);
+            list.Add(new MessageContext<T>(_streamUtil, message.GetValue(), topicData));
         } while (message != null && list.Count < batchSize && await reader.HasMessageAvailableAsync());
 
         return list.ToArray();

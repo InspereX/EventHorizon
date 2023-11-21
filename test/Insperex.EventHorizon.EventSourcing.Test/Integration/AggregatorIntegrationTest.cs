@@ -22,6 +22,8 @@ using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStore.Models;
 using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
+using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -42,6 +44,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     private readonly Aggregator<Snapshot<Account>, Account> _accountAggregator;
     private readonly Aggregator<Snapshot<User>, User> _userAggregator;
     private readonly EventSourcingClient<Account> _eventSourcingClient;
+    private readonly StreamUtil _streamUtil;
 
     public AggregatorIntegrationTest(ITestOutputHelper output)
     {
@@ -62,6 +65,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
                         .AddInMemorySnapshotStore()
                         .AddInMemoryViewStore()
                         .AddInMemoryEventStream();
+                    // .AddPulsarEventStream(hostContext.Configuration.GetSection("Pulsar").Bind);
                 });
             })
             .UseSerilog((_, config) =>
@@ -81,6 +85,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
 
         _streamingClient = _host.Services.GetRequiredService<StreamingClient>();
         _snapshotStore = _host.Services.GetRequiredService<ISnapshotStoreFactory<Account>>().GetSnapshotStore();
+        _streamUtil = _host.Services.GetRequiredService<StreamUtil>();
     }
 
     public async Task InitializeAsync()
@@ -124,15 +129,14 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     {
         // Setup
         var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(9);
-        var command1 = new Command(streamId, new ChangeUserName("Bob"));
-        var command2 = new Command(streamId, new ChangeUserName("Joe"));
-
-        var streamUtil = new StreamUtil(new AttributeUtil());
-
+        var command1 = new ChangeUserName("Bob");
+        var command2 = new ChangeUserName("Joe");
 
         // Act
-        var res1 = await _userAggregator.HandleAsync(new MessageContext<Command>(streamUtil) { Data = command1 }, CancellationToken.None);
-        var res2 = await _userAggregator.HandleAsync(new MessageContext<Command>(streamUtil) { Data = command2 }, CancellationToken.None);
+        var topic = _streamUtil.GetTopic(command1.GetType());
+        var topicData = new TopicData("1", topic, DateTime.UtcNow);
+        var res1 = await _userAggregator.HandleAsync(new MessageContext<Command>(_streamUtil, new Command(streamId, command1), topicData), CancellationToken.None);
+        var res2 = await _userAggregator.HandleAsync(new MessageContext<Command>(_streamUtil, new Command(streamId, command2), topicData), CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _userAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);
@@ -149,11 +153,12 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     {
         // Setup
         var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(9);
-        var @event = new Event(streamId, 1, new AccountOpened(100));
+        var @event = new AccountOpened(100);
 
         // Act
-        var streamUtil = new StreamUtil(new AttributeUtil());
-        var res = await _accountAggregator.HandleAsync(new MessageContext<Event>(streamUtil) { Data = @event }, CancellationToken.None);
+        var topic = _streamUtil.GetTopic(@event.GetType());
+        var topicData = new TopicData("1", topic, DateTime.UtcNow);
+        var res = await _accountAggregator.HandleAsync(new MessageContext<Event>(_streamUtil, new Event(streamId, 1, @event), topicData), CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _accountAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);

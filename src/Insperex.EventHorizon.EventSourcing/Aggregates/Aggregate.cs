@@ -17,11 +17,9 @@ namespace Insperex.EventHorizon.EventSourcing.Aggregates;
 public class Aggregate<T>
     where T : class, IState
 {
-    private readonly StreamUtil _streamUtil;
     internal readonly List<Event> Events = new();
     internal readonly List<Response> Responses = new();
     private readonly Type _type = typeof(T);
-    private readonly string _topic;
     private Dictionary<Type, object> AllStates { get; set; }
     public HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
     public string Error { get; private set; }
@@ -32,20 +30,15 @@ public class Aggregate<T>
     public DateTime CreatedDate { get; set; }
     public DateTime UpdatedDate { get; set; }
 
-    public Aggregate(string streamId, StreamUtil streamUtil)
+    public Aggregate(string streamId)
     {
-        _streamUtil = streamUtil;
-        _topic = _streamUtil.GetTopic(typeof(T));
-
         Id = streamId;
         CreatedDate = UpdatedDate = DateTime.UtcNow;
         Setup();
     }
 
-    public Aggregate(IStateParent<T> model, StreamUtil streamUtil)
+    public Aggregate(IStateParent<T> model)
     {
-        _streamUtil = streamUtil;
-        _topic = _streamUtil.GetTopic(typeof(T));
         Id = model.Id;
         SequenceId = model.SequenceId;
         State = model.State;
@@ -54,14 +47,11 @@ public class Aggregate<T>
         Setup();
     }
 
-    public Aggregate(MessageContext<Event>[] events, StreamUtil streamUtil)
+    public Aggregate(string streamId, IEvent[] events)
     {
-        _streamUtil = streamUtil;
-        _topic = _streamUtil.GetTopic(typeof(T));
-
         // Create
         Setup();
-        Id = events.Select(x => x.Data.StreamId).FirstOrDefault();
+        Id = streamId;
         CreatedDate = DateTime.UtcNow;
 
         // Defensive
@@ -69,71 +59,59 @@ public class Aggregate<T>
 
         // Apply Events
         foreach (var @event in events)
-            Apply(@event.Data, @event.TopicData?.Topic, false);
+            Apply(@event);
     }
 
-    public void Handle(Command command, string topic = default)
+    public void Handle(ICommand payload)
     {
-        topic ??= _topic;
-
-        // Try Self
-        var payload = _streamUtil.GetPayload(topic, command);
         foreach (var state in AllStates)
         {
             var context = new AggregateContext(Exists());
             var method = AggregateAssemblyUtil.StateToCommandHandlersDict.GetValueOrDefault(state.Key)?.GetValueOrDefault(payload.GetType());
-            method?.Invoke(state.Value, parameters: new [] { payload, context } );
-            foreach(var item in context.Events)
-                Apply(new Event(Id, SequenceId, item));
+            method?.Invoke(state.Value, parameters: new object[] { payload, context } );
+            foreach (var item in context.Events)
+                Apply(item);
         }
     }
 
-    public void Handle(Request request, string topic = default)
+    public void Handle(IRequest payload, string requestId, string senderId)
     {
-        topic ??= _topic;
-
-        // Try Self
-        var payload = _streamUtil.GetPayload(topic, request);
         foreach (var state in AllStates)
         {
             var context = new AggregateContext(Exists());
             var method = AggregateAssemblyUtil.StateToRequestHandlersDict.GetValueOrDefault(state.Key)?.GetValueOrDefault(payload.GetType());
-            var result = method?.Invoke(state.Value, parameters: new [] { payload, context } );
-            Responses.Add(new Response(request.Id, request.SenderId, Id, result, Error, (int)StatusCode));
+            var result = method?.Invoke(state.Value, parameters: new object[] { payload, context } );
+            Responses.Add(new Response(requestId, senderId, Id, result, Error, (int)StatusCode));
             foreach(var item in context.Events)
-                Apply(new Event(Id, SequenceId, item), topic);
+                Apply(item);
         }
     }
 
-    public void Apply(IEvent<T> @event, string topic = default)
+    public void Apply(IEvent<T> @event, long? sequenceId = null)
     {
-        Apply(new Event(Id, ++SequenceId, @event), topic);
+        Apply(@event, sequenceId);
     }
 
-    public void Apply(Event @event, string topic = default, bool isFirstTime = true)
+    public void Apply(IEvent payload, long? sequenceId = null)
     {
-        topic ??= _topic;
-
-        // Try Self
-        var payload = _streamUtil.GetPayload(topic, @event);
         foreach (var state in AllStates)
         {
             var method = AggregateAssemblyUtil.StateToEventHandlersDict.GetValueOrDefault(state.Key)?.GetValueOrDefault(payload.GetType());
-            method?.Invoke(state.Value, parameters: new [] { payload } );
+            method?.Invoke(state.Value,
+                parameters: sequenceId == null ? new object[] { payload } : new object[] { payload, sequenceId });
         }
 
-        // Track Events only if first time applying
-        if (isFirstTime)
+        // If SequenceId passed, then update sequenceId
+        if (sequenceId != null)
         {
-            @event.SequenceId = ++SequenceId;
-            Events.Add(@event);
+            SequenceId = sequenceId.Value;
         }
         else
         {
-            SequenceId = @event.SequenceId;
+            IsDirty = true;
+            SequenceId = ++SequenceId;
+            Events.Add(new Event(Id, SequenceId, payload));
         }
-
-        IsDirty = true;
         UpdatedDate = DateTime.UtcNow;
     }
 

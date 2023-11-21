@@ -6,6 +6,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces;
+using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
@@ -28,6 +29,7 @@ public class Aggregator<TParent, T>
     private readonly ILogger<Aggregator<TParent, T>> _logger;
     private readonly StreamingClient _streamingClient;
     private readonly Dictionary<string, object> _publisherDict = new();
+    private readonly string _topic;
 
     public Aggregator(
         ICrudStore<TParent> crudStore,
@@ -41,6 +43,7 @@ public class Aggregator<TParent, T>
         _config = config;
         _streamUtil = streamUtil;
         _logger = logger;
+        _topic = _streamUtil.GetTopic(typeof(T));
     }
 
     internal AggregateConfig<T> GetConfig()
@@ -70,11 +73,14 @@ public class Aggregator<TParent, T>
             foreach (var streamId in streamIds)
             {
                 var agg = modelsDict.ContainsKey(streamId)
-                    ? new Aggregate<T>(modelsDict[streamId], _streamUtil)
-                    : new Aggregate<T>(streamId, _streamUtil);
+                    ? new Aggregate<T>(modelsDict[streamId])
+                    : new Aggregate<T>(streamId);
 
                 foreach (var message in lookup[streamId])
-                    agg.Apply(message.Data);
+                {
+                    var payload = _streamUtil.GetPayload(_topic, message.Data) as IEvent;
+                    agg.Apply(payload);
+                }
 
                 dict[agg.Id] = agg;
             }
@@ -117,11 +123,12 @@ public class Aggregator<TParent, T>
                 continue;
             try
             {
+                var payload = _streamUtil.GetPayload(_topic, message.Data);
                 switch (message.Data)
                 {
-                    case Command command: agg.Handle(command, message.TopicData.Topic); break;
-                    case Request request: agg.Handle(request, message.TopicData.Topic); break;
-                    case Event @event: agg.Apply(@event, message.TopicData.Topic, false); break;
+                    case Command command: agg.Handle(payload as ICommand); break;
+                    case Request request: agg.Handle(payload as IRequest, request.Id, request.SenderId); break;
+                    case Event @event: agg.Apply(payload as IEvent); break;
                 }
             }
             catch (Exception e)
@@ -299,7 +306,7 @@ public class Aggregator<TParent, T>
 
             // Build Aggregate Dict
             var aggregateDict = streamIds
-                .Select(x => parentDict.TryGetValue(x, out var value)? new Aggregate<T>(value, _streamUtil) : new Aggregate<T>(x, _streamUtil))
+                .Select(x => parentDict.TryGetValue(x, out var value)? new Aggregate<T>(value) : new Aggregate<T>(x))
                 .ToDictionary(x => x.Id);
 
             // OnCompleted Hook
@@ -324,7 +331,7 @@ public class Aggregator<TParent, T>
             return streamIds
                 .Select(x =>
                 {
-                    var agg = new Aggregate<T>(x, _streamUtil);
+                    var agg = new Aggregate<T>(x);
                     agg.SetStatus(HttpStatusCode.InternalServerError, ex.Message);
                     return agg;
                 })
@@ -338,16 +345,16 @@ public class Aggregator<TParent, T>
         return results[streamId];
     }
 
-    public async Task<Dictionary<string, Aggregate<T>>> GetAggregatesFromEventsAsync(string[] streamIds,
-        DateTime? endDateTime = null)
+    public async Task<Dictionary<string, Aggregate<T>>> GetAggregatesFromEventsAsync(string[] streamIds, DateTime? endDateTime = null)
     {
         var events = await GetEventsAsync(streamIds, endDateTime);
         var eventLookup = events.ToLookup(x => x.Data.StreamId);
+        var topic = _streamUtil.GetTopic(typeof(T));
         return streamIds
             .Select(x =>
             {
-                var e = eventLookup[x].ToArray();
-                return e.Any() ? new Aggregate<T>(e.ToArray(), _streamUtil) : new Aggregate<T>(x, _streamUtil);
+                var subEvents = eventLookup[x].Select(e => _streamUtil.GetPayload(topic, e.Data) as IEvent).ToArray();
+                return subEvents.Any() ? new Aggregate<T>(x, subEvents) : new Aggregate<T>(x);
             })
             .ToDictionary(x => x.Id);
     }

@@ -12,11 +12,13 @@ namespace Insperex.EventHorizon.Abstractions.Util
     public class StreamUtil
     {
         private readonly AttributeUtil _assemblyUtil;
-        private readonly Dictionary<string, Type> _topicActions = new();
+        private readonly Dictionary<(string, string), Type> _actions = new();
+        private readonly Dictionary<Type, string> _topics = new();
 
         public StreamUtil(AttributeUtil assemblyUtil)
         {
             _assemblyUtil = assemblyUtil;
+
             // Store Topic from States
             foreach (var state in AssemblyUtil.States)
             {
@@ -26,25 +28,24 @@ namespace Insperex.EventHorizon.Abstractions.Util
                 // Skip Views
                 if (streamAttribute.SourceType != null) continue;
 
-                // Load Actions
-                var commands = AssemblyUtil.StateToCommandsLookup.GetValueOrDefault(state);
-                var requests = AssemblyUtil.StateToRequestsLookup.GetValueOrDefault(state);
-                var events = AssemblyUtil.StateToEventsLookup.GetValueOrDefault(state);
-
-                // Append Actions
-                var actions = new List<Type>();
-                if (commands?.Any() == true) actions.AddRange(commands);
-                if (requests?.Any() == true) actions.AddRange(requests);
-                if (events?.Any() == true) actions.AddRange(events);
-
-                // Leave if no actions
-                if (actions?.Any() != true) continue;
+                var topic = streamAttribute.GetTopic(state);
+                _topics[state] = topic;
 
                 // Add Actions
-                foreach (var action in actions)
+                foreach (var action in AssemblyUtil.StateToCommandsLookup[state])
                 {
-                    var topic = GetTopic(streamAttribute, state);
-                    _topicActions[GetKey(topic, action.Name)] = action;
+                    _actions[(topic, action.Name)] = action;
+                    _topics[action] = topic;
+                }
+                foreach (var action in AssemblyUtil.StateToRequestsLookup[state])
+                {
+                    _actions[(topic, action.Name)] = action;
+                    _topics[action] = topic;
+                }
+                foreach (var action in AssemblyUtil.StateToEventsLookup[state])
+                {
+                    _actions[(topic, action.Name)] = action;
+                    _topics[action] = topic;
                 }
             }
 
@@ -55,23 +56,15 @@ namespace Insperex.EventHorizon.Abstractions.Util
                 if (streamAttribute == null) continue;
 
                 // Add Action
-                var topic = GetTopic(streamAttribute, action);
-                _topicActions[GetKey(topic, action.Name)] = action;
+                var topic = streamAttribute.GetTopic(action);
+                _actions[(topic, action.Name)] = action;
+                _topics[action] = topic;
             }
         }
 
-        public Type GetTypeFromTopic(string topic, string type) => _topicActions.GetValueOrDefault(GetKey(topic, type));
+        public Type GetTypeFromTopic(string topic, string type) => _actions.GetValueOrDefault((topic, type));
 
-        public string GetTopic(StreamAttribute streamAttribute, Type type)
-        {
-            return streamAttribute?.Topic?.Replace(StreamingConstants.TypeKey, type.Name);
-        }
-
-        public string GetTopic(Type type)
-        {
-            var streamAttribute = _assemblyUtil.GetOne<StreamAttribute>(type);
-            return GetTopic(streamAttribute, type);
-        }
+        public string GetTopic(Type type) => _topics.GetValueOrDefault(type);
 
         public object GetPayload(string topic, ITopicMessage topicMessage)
         {
@@ -93,7 +86,5 @@ namespace Insperex.EventHorizon.Abstractions.Util
             upgrade?.Invoke(payload, null);
             return (T)Activator.CreateInstance(typeof(T), topicMessage.StreamId, payload);
         }
-
-        private static string GetKey(string topic, string type) => $"{topic}-{type}";
     }
 }

@@ -27,16 +27,11 @@ public class MessageDatabase
 
         foreach (var message in messages)
         {
-            var context = new MessageContext<T>(_streamUtil)
-            {
-                Data = message,
-                TopicData = new TopicData(
-                    // Expose message's own index in topic.
-                    _messages[topic].Count.ToString(CultureInfo.InvariantCulture),
-                    topic,
-                    DateTime.UtcNow)
-            };
-
+            var context = new MessageContext<T>(_streamUtil, message, new TopicData(
+                // Expose message's own index in topic.
+                _messages[topic].Count.ToString(CultureInfo.InvariantCulture),
+                topic,
+                DateTime.UtcNow));
             _messages[topic].Add(context);
         }
     }

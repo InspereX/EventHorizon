@@ -33,8 +33,9 @@ public class PulsarTopicResolver : ITopicResolver
                 var @namespace = !PulsarTopicConstants.MessageTypes.Contains(typeof(TM))
                     ? pulsarAttr?.Namespace ?? PulsarTopicConstants.DefaultNamespace
                     : PulsarTopicConstants.MessageNamespace;
-                var topic = topicName == null ? x.Topic : $"{x.Topic}-{topicName}";
-                return $"{persistent}://{tenant}/{@namespace}/{topic}".Replace(StreamingConstants.TypeKey, typeof(TM).Name);
+                var type = typeof(TM);
+                var topic = topicName == null ? x.GetTopic(type) : $"{x.GetTopic(type)}-{topicName}";
+                return $"{persistent}://{tenant}/{@namespace}/{topic}";
             })
             .ToArray();
 

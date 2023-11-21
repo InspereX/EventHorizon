@@ -65,11 +65,8 @@ public class PulsarTopicConsumer<T> : ITopicConsumer<T> where T : ITopicMessage,
                     var topic = _config.Topics.Length == 1 ? _config.Topics.First() : x.MessageId.TopicName;
 
                     var id = Guid.NewGuid().ToString();
-                    var context = new MessageContext<T>(_streamUtil)
-                    {
-                        Data = x.GetValue(),
-                        TopicData = PulsarMessageMapper.MapTopicData(id, x, topic)
-                    };
+                    var context = new MessageContext<T>(_streamUtil, x.GetValue(),
+                        PulsarMessageMapper.MapTopicData(id, x, topic));
 
                     _unackedMessages[id] = x;
 

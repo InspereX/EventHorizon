@@ -224,8 +224,6 @@ public class PulsarTopicAdmin<T> : ITopicAdmin<T> where T : ITopicMessage
                 // Ignore race conditions
             }
         }
-
-
     }
 
     private async Task RequireTenant(string tenant, CancellationToken ct)

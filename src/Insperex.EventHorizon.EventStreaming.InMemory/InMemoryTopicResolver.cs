@@ -23,8 +23,9 @@ public class InMemoryTopicResolver : ITopicResolver
         var topics = attributes
             .Select(x =>
             {
-                var topic = topicName == null ? x.Topic : $"{x.Topic}-{topicName}";
-                return $"in-memory://{typeof(TM).Name}/{topic}";
+                var state = typeof(TM);
+                var topic = topicName == null ? x.GetTopic(state) : $"{x.GetTopic(type)}-{topicName}";
+                return $"in-memory://{state.Name}/{topic}";
             })
             .ToArray();
 

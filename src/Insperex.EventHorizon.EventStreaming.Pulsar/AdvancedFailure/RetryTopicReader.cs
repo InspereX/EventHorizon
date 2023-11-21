@@ -67,11 +67,8 @@ public class RetryTopicReader<T>: IAsyncDisposable where T : class, ITopicMessag
                     //_logger.LogInformation("Reader: got msg: {message}", MsgToStr(message, topic));
                     var sequenceId = message.SequenceId.ToString(CultureInfo.InvariantCulture);
 
-                    messages.Add(new MessageContext<T>(_streamUtil)
-                    {
-                        Data = data,
-                        TopicData = PulsarMessageMapper.MapTopicData(sequenceId, message, topic)
-                    });
+                    messages.Add(new MessageContext<T>(_streamUtil, data,
+                        PulsarMessageMapper.MapTopicData(sequenceId, message, topic)));
                 }
             }
         } while (messages.Count < batchSize && anyMoreMessages);

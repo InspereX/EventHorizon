@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -30,13 +31,10 @@ public class AggregateUnitTests
     public void TestAggregateFromEvents()
     {
         var events = Enumerable.Range(0, 5).Select(x => new AccountCredited(100)).ToArray();
-        var eventWrappers = events.Select((x,i) => new Event(_streamId, i, x)).ToArray();
-        var messages = eventWrappers.Select(x => new MessageContext<Event>(_streamUtil)
-            { Data = x }).ToArray();
-        var aggregate = new Aggregate<Account>(messages, _streamUtil);
+        var aggregate = new Aggregate<Account>(_streamId, events);
 
-        Assert.Equal(eventWrappers.Last().StreamId, aggregate.Id);
-        Assert.Equal(eventWrappers.Last().SequenceId, aggregate.SequenceId);
+        Assert.Equal(_streamId, aggregate.Id);
+        Assert.Equal(5, aggregate.SequenceId);
         Assert.Equal(events.Sum(x => x.Amount), aggregate.State.Amount);
         Assert.True(aggregate.Exists());
     }
@@ -46,7 +44,7 @@ public class AggregateUnitTests
     {
         var state = new Account { Id = _streamId, Amount = 100 };
         var snapshotWrapper = new Snapshot<Account>(state.Id, 1, state, DateTime.UtcNow.AddDays(-1), DateTime.UtcNow);
-        var aggregate = new Aggregate<Account>(snapshotWrapper, _streamUtil);
+        var aggregate = new Aggregate<Account>(snapshotWrapper);
 
         Assert.Equal(snapshotWrapper.Id, aggregate.Id);
         Assert.Equal(snapshotWrapper.SequenceId, aggregate.SequenceId);
@@ -60,7 +58,7 @@ public class AggregateUnitTests
     [Fact]
     public void TestAggregateFromOnlyStreamId()
     {
-        var aggregate = new Aggregate<Account>(_streamId, _streamUtil);
+        var aggregate = new Aggregate<Account>(_streamId);
 
         Assert.Equal(_streamId, aggregate.Id);
         Assert.Equal(0, aggregate.SequenceId);
@@ -73,16 +71,15 @@ public class AggregateUnitTests
     public void TestApplyEventBasicView()
     {
         // Create Aggregate and Apply
-        var @event = new Event(_streamId, 1, new AccountOpened(100));
-        var agg = new Aggregate<AccountView>(_streamId, _streamUtil);
-        agg.Apply(@event, _streamUtil.GetTopic(typeof(Account)));
+        var @event = new AccountOpened(100);
+        var agg = new Aggregate<AccountView>(_streamId);
+        agg.Apply(@event);
 
         // Assert State and Agg
-        var expected = JsonSerializer.Deserialize<OpenAccount>(@event.Payload);
         Assert.Equal(_streamId, agg.Id);
         Assert.Equal(_streamId, agg.State.Id);
         Assert.Equal(1, agg.SequenceId);
-        Assert.Equal(expected.Amount, agg.State.Amount);
+        Assert.Equal(@event.Amount, agg.State.Amount);
 
         // Assert Event
         Assert.Single(agg.Events);
@@ -92,16 +89,15 @@ public class AggregateUnitTests
     public void TestApplyEventAdvancedView()
     {
         // Create Aggregate and Apply
-        var @event = new Event(_streamId, 1, new AccountOpened(100));
-        var agg = new Aggregate<SearchAccountView>(_streamId, _streamUtil);
-        agg.Apply(@event, _streamUtil.GetTopic(typeof(Account)));
+        var @event = new AccountOpened(100);
+        var agg = new Aggregate<SearchAccountView>(_streamId);
+        agg.Apply(@event);
 
         // Assert State and Agg
-        var expected = JsonSerializer.Deserialize<OpenAccount>(@event.Payload);
         Assert.Equal(_streamId, agg.Id);
         Assert.Equal(_streamId, agg.State.Id);
         Assert.Equal(1, agg.SequenceId);
-        Assert.Equal(expected.Amount, agg.State.Account.Amount);
+        Assert.Equal(@event.Amount, agg.State.Account.Amount);
 
         // Assert Event
         Assert.Single(agg.Events);
@@ -111,17 +107,15 @@ public class AggregateUnitTests
     public void TestHandleCommand()
     {
         // Create Aggregate and Apply
-        var topic = _streamUtil.GetTopic(typeof(User));
-        var command = _streamUtil.Upgrade(topic, new Command(_streamId, new ChangeUserName("Bob")));
-        var agg = new Aggregate<User>(_streamId, _streamUtil);
+        var command = new ChangeUserName("Bob");
+        var agg = new Aggregate<User>(_streamId);
         agg.Handle(command);
 
         // Assert State and Agg
-        var expected = JsonSerializer.Deserialize<ChangeUserName>(command.Payload);
         Assert.Equal(_streamId, agg.Id);
         Assert.Equal(_streamId, agg.State.Id);
         Assert.Equal(1, agg.SequenceId);
-        Assert.Equal(expected.Name, agg.State.Name);
+        Assert.Equal(command.Name, agg.State.Name);
 
         // Assert Event
         var @event = agg.Events.First();
@@ -135,16 +129,15 @@ public class AggregateUnitTests
     public void TestHandleRequestResponse()
     {
         // Create Aggregate and Apply
-        var request = new Request(_streamId, new OpenAccount(100));
-        var agg = new Aggregate<Account>(_streamId, _streamUtil);
-        agg.Handle(request);
+        var req = new OpenAccount(100);
+        var agg = new Aggregate<Account>(_streamId);
+        agg.Handle(req, "123", "123");
 
         // Assert State and Agg
-        var expected = JsonSerializer.Deserialize<OpenAccount>(request.Payload);
         Assert.Equal(_streamId, agg.Id);
         Assert.Equal(_streamId, agg.State.Id);
         Assert.Equal(1, agg.SequenceId);
-        Assert.Equal(expected.Amount, agg.State.Amount);
+        Assert.Equal(req.Amount, agg.State.Amount);
 
         // Assert Event
         var @event = agg.Events.First();
@@ -162,9 +155,9 @@ public class AggregateUnitTests
     public void TestHandleRequestResponseFailedResult()
     {
         // Create Aggregate and Apply
-        var request = new Request(_streamId, new Withdrawal(100));
-        var agg = new Aggregate<Account>(_streamId, _streamUtil);
-        agg.Handle(request);
+        var request = new Withdrawal(100);
+        var agg = new Aggregate<Account>(_streamId);
+        agg.Handle(request, "123", "123");
 
         // Assert State and Agg
         Assert.Equal(_streamId, agg.Id);
@@ -186,16 +179,15 @@ public class AggregateUnitTests
     public void TestHandleRequestResponseAggregateRoot()
     {
         // Create Aggregate and Apply
-        var request = new Request(_streamId, new OpenAccount(100));
-        var agg = new Aggregate<BankAccount>(_streamId, _streamUtil);
-        agg.Handle(request, _streamUtil.GetTopic(typeof(Account)));
+        var request = new OpenAccount(100);
+        var agg = new Aggregate<BankAccount>(_streamId);
+        agg.Handle(request, "123", "123");
 
         // Assert State and Agg
-        var expected = JsonSerializer.Deserialize<OpenAccount>(request.Payload);
         Assert.Equal(_streamId, agg.Id);
         Assert.Equal(1, agg.SequenceId);
         Assert.Equal(_streamId, agg.State.Account.Id);
-        Assert.Equal(expected.Amount, agg.State.Account.Amount);
+        Assert.Equal(request.Amount, agg.State.Account.Amount);
 
         // Assert Event
         var @event = agg.Events.First();
