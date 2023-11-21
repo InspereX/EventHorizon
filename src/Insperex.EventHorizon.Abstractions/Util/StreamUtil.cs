@@ -6,6 +6,7 @@ using Insperex.EventHorizon.Abstractions.Attributes;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 
 namespace Insperex.EventHorizon.Abstractions.Util
 {
@@ -27,23 +28,24 @@ namespace Insperex.EventHorizon.Abstractions.Util
 
                 // Skip Views
                 if (streamAttribute.SourceType != null) continue;
-
-                var topic = streamAttribute.GetTopic(state);
-                _topics[state] = topic;
+                _topics[state] = streamAttribute.GetTopic(state);
 
                 // Add Actions
                 foreach (var action in AssemblyUtil.StateToCommandsLookup[state])
                 {
+                    var topic = streamAttribute.GetTopic(typeof(Command));
                     _actions[(topic, action.Name)] = action;
                     _topics[action] = topic;
                 }
                 foreach (var action in AssemblyUtil.StateToRequestsLookup[state])
                 {
+                    var topic = streamAttribute.GetTopic(typeof(Request));
                     _actions[(topic, action.Name)] = action;
                     _topics[action] = topic;
                 }
                 foreach (var action in AssemblyUtil.StateToEventsLookup[state])
                 {
+                    var topic = streamAttribute.GetTopic(typeof(Event));
                     _actions[(topic, action.Name)] = action;
                     _topics[action] = topic;
                 }

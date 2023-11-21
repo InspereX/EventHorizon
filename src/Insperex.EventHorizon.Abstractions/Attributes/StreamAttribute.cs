@@ -26,9 +26,9 @@ namespace Insperex.EventHorizon.Abstractions.Attributes
             Topic = attr.Topic;
         }
 
-        public string GetTopic(Type state)
+        public string GetTopic(Type action)
         {
-            return Topic.Replace(StreamingConstants.TypeKey, state.Name);
+            return Topic.Replace(StreamingConstants.TypeKey, action.Name);
         }
     }
 }

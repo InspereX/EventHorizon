@@ -29,7 +29,6 @@ public class Aggregator<TParent, T>
     private readonly ILogger<Aggregator<TParent, T>> _logger;
     private readonly StreamingClient _streamingClient;
     private readonly Dictionary<string, object> _publisherDict = new();
-    private readonly string _topic;
 
     public Aggregator(
         ICrudStore<TParent> crudStore,
@@ -43,7 +42,6 @@ public class Aggregator<TParent, T>
         _config = config;
         _streamUtil = streamUtil;
         _logger = logger;
-        _topic = _streamUtil.GetTopic(typeof(T));
     }
 
     internal AggregateConfig<T> GetConfig()
@@ -78,7 +76,7 @@ public class Aggregator<TParent, T>
 
                 foreach (var message in lookup[streamId])
                 {
-                    var payload = _streamUtil.GetPayload(_topic, message.Data) as IEvent;
+                    var payload = message.GetPayload() as IEvent;
                     agg.Apply(payload);
                 }
 
@@ -123,7 +121,7 @@ public class Aggregator<TParent, T>
                 continue;
             try
             {
-                var payload = _streamUtil.GetPayload(_topic, message.Data);
+                var payload = message.GetPayload();
                 switch (message.Data)
                 {
                     case Command command: agg.Handle(payload as ICommand); break;
