@@ -36,6 +36,7 @@ namespace Insperex.EventHorizon.EventStreaming.InMemory.Extensions
             configurator.Collection.AddSingleton(typeof(SubscriptionBuilder<>));
             configurator.Collection.AddSingleton(typeof(Admin<>));
             configurator.Collection.AddSingleton<AttributeUtil>();
+            configurator.Collection.AddSingleton<StreamUtil>();
             configurator.Collection.AddSingleton<FailureHandlerFactory>();
 
             return configurator;

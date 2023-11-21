@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,12 +22,14 @@ public abstract class BaseMultiTopicConsumerIntegrationTest : IAsyncLifetime
     protected readonly ITestOutputHelper _outputHelper;
     protected readonly TimeSpan _timeout;
     private Stopwatch _stopwatch;
-    protected Event[] _events;
     protected readonly StreamingClient _streamingClient;
     private readonly ListStreamConsumer<Event> _handler;
     private Publisher<Event> _publisher1;
     private Publisher<Event> _publisher2;
     private readonly PartialNackListStreamConsumer _partialNackHandler;
+    private Event[] _events1;
+    private Event[] _events2;
+    protected Event[] _allEvents;
 
     protected BaseMultiTopicConsumerIntegrationTest(ITestOutputHelper outputHelper, IServiceProvider provider)
     {
@@ -49,11 +52,13 @@ public abstract class BaseMultiTopicConsumerIntegrationTest : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Publish Events
-        _events = EventStreamingFakers.RandomEventFaker.Generate(1000).ToArray();
+        _events1 = EventStreamingFakers.WrapEvents(EventStreamingFakers.Feed1PriceChangedFaker.Generate(500).ToArray());
+        _events2 = EventStreamingFakers.WrapEvents(EventStreamingFakers.Feed2PriceChangedFaker.Generate(500).ToArray());
+        _allEvents = _events1.Concat(_events2).ToArray();
         _publisher1 = _streamingClient.CreatePublisher<Event>().AddStream<Feed1PriceChanged>().Build();
         _publisher2 = _streamingClient.CreatePublisher<Event>().AddStream<Feed2PriceChanged>().Build();
-        await _publisher1.PublishAsync(_events.Take(_events.Length/2).ToArray());
-        await _publisher2.PublishAsync(_events.Skip(_events.Length/2).ToArray());
+        await _publisher1.PublishAsync(_events1);
+        await _publisher2.PublishAsync(_events2);
 
         // Setup
         _stopwatch = Stopwatch.StartNew();
@@ -75,14 +80,14 @@ public abstract class BaseMultiTopicConsumerIntegrationTest : IAsyncLifetime
         await using var subscription = await _streamingClient.CreateSubscription<Event>()
             .AddStream<Feed1PriceChanged>()
             .AddStream<Feed2PriceChanged>()
-            .BatchSize(_events.Length/10)
+            .BatchSize(_allEvents.Length/10)
             .OnBatch(_handler.OnBatch)
             .Build()
             .StartAsync();
 
         // Assert
-        await WaitUtil.WaitForTrue(() => _events.Length <= _handler.List.Count, _timeout);
-        AssertUtil.AssertEventsValid(_events, _handler.List.ToArray());
+        await WaitUtil.WaitForTrue(() => _allEvents.Length <= _handler.List.Count, _timeout);
+        AssertUtil.AssertEventsValid(_allEvents, _handler.List.ToArray());
     }
 
     [Fact]
@@ -90,14 +95,14 @@ public abstract class BaseMultiTopicConsumerIntegrationTest : IAsyncLifetime
     {
         // Consume
         var builder = _streamingClient.CreateSubscription<Event>()
-            .BatchSize(_events.Length / 10);
+            .BatchSize(_allEvents.Length / 10);
 
         await using var subscription1 = await builder.AddStream<Feed1PriceChanged>().OnBatch(_handler.OnBatch).Build().StartAsync();
         await using var subscription2 = await builder.AddStream<Feed2PriceChanged>().OnBatch(_handler.OnBatch).Build().StartAsync();
 
         // Assert
-        await WaitUtil.WaitForTrue(() => _events.Length <= _handler.List.Count, _timeout);
-        AssertUtil.AssertEventsValid(_events, _handler.List.ToArray());
+        await WaitUtil.WaitForTrue(() => _allEvents.Length <= _handler.List.Count, _timeout);
+        AssertUtil.AssertEventsValid(_allEvents, _handler.List.ToArray());
     }
 
     [Fact]
@@ -108,7 +113,7 @@ public abstract class BaseMultiTopicConsumerIntegrationTest : IAsyncLifetime
             .SubscriptionName($"Fails_{UniqueTestId}")
             .AddStream<Feed1PriceChanged>()
             .AddStream<Feed2PriceChanged>()
-            .BatchSize(_events.Length / 10)
+            .BatchSize(_allEvents.Length / 10)
             .GuaranteeMessageOrderOnFailure(true)
             .ExponentialBackoff(b => b
                 .StartAt(TimeSpan.FromMilliseconds(10))
@@ -118,7 +123,7 @@ public abstract class BaseMultiTopicConsumerIntegrationTest : IAsyncLifetime
             .StartAsync();
 
         // Wait for List
-        await WaitUtil.WaitForTrue(() => _events.Length <= _partialNackHandler.List.Count, _timeout);
+        await WaitUtil.WaitForTrue(() => _allEvents.Length <= _partialNackHandler.List.Count, _timeout);
 
         _partialNackHandler.Report();
         Assert.True(_partialNackHandler.RedeliveredMessages == 0,
@@ -126,6 +131,6 @@ public abstract class BaseMultiTopicConsumerIntegrationTest : IAsyncLifetime
 
         // Assert
         // Expecting the advanced failure handling to preserve message ordering despite the nacks.
-        AssertUtil.AssertEventsValid(_events, _partialNackHandler.List.ToArray());
+        AssertUtil.AssertEventsValid(_allEvents, _partialNackHandler.List.ToArray());
     }
 }

@@ -347,12 +347,11 @@ public class Aggregator<TParent, T>
     {
         var events = await GetEventsAsync(streamIds, endDateTime);
         var eventLookup = events.ToLookup(x => x.Data.StreamId);
-        var topic = _streamUtil.GetTopic(typeof(T));
-        return streamIds
-            .Select(x =>
+        return eventLookup
+            .Select(kvp =>
             {
-                var subEvents = eventLookup[x].Select(e => _streamUtil.GetPayload(topic, e.Data) as IEvent).ToArray();
-                return subEvents.Any() ? new Aggregate<T>(x, subEvents) : new Aggregate<T>(x);
+                var subEvents = kvp.Select(e => e.GetPayload() as IEvent).ToArray();
+                return subEvents.Any() ? new Aggregate<T>(kvp.Key, subEvents) : new Aggregate<T>(kvp.Key);
             })
             .ToDictionary(x => x.Id);
     }

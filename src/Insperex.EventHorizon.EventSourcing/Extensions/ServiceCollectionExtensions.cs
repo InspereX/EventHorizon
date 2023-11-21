@@ -23,7 +23,6 @@ public static class ServiceCollectionExtensions
         configurator.Collection.TryAddSingleton<SenderBuilder>();
         configurator.Collection.TryAddSingleton<SenderSubscriptionTracker>();
         configurator.Collection.TryAddSingleton<ValidationUtil>();
-        configurator.Collection.TryAddSingleton<StreamUtil>();
 
         return configurator;
     }

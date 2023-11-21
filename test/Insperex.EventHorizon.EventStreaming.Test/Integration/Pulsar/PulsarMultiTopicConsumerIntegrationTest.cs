@@ -44,14 +44,14 @@ public class PulsarMultiTopicConsumerIntegrationTest : BaseMultiTopicConsumerInt
             .SubscriptionName($"Fails_{UniqueTestId}")
             .AddStream<Feed1PriceChanged>()
             .AddStream<Feed2PriceChanged>()
-            .BatchSize(_events.Length / 10)
+            .BatchSize(_allEvents.Length / 10)
             .FailedMessageRedeliveryDelay(TimeSpan.FromMilliseconds(5))
             .OnBatch(handler.OnBatch) // Will nack at least some messages.
             .Build()
             .StartAsync();
 
         // Wait for List
-        await WaitUtil.WaitForTrue(() => _events.Length <= handler.List.Count, _timeout);
+        await WaitUtil.WaitForTrue(() => _allEvents.Length <= handler.List.Count, _timeout);
 
         handler.Report();
 
@@ -61,6 +61,6 @@ public class PulsarMultiTopicConsumerIntegrationTest : BaseMultiTopicConsumerInt
 
         // Assert
         // Expecting the advanced failure handling to preserve message ordering despite the nacks.
-        AssertUtil.AssertEventsValid(_events, false, handler.List.ToArray());
+        AssertUtil.AssertEventsValid(_allEvents, false, handler.List.ToArray());
     }
 }
