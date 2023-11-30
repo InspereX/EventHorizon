@@ -17,15 +17,16 @@ public class InMemoryTopicResolver : ITopicResolver
         _attributeUtil = attributeUtil;
     }
 
-    public string[] GetTopics<TM>(Type state, string topicName = null) where TM : ITopicMessage
+    public string[] GetTopics<TM>(Type stateType, string topicName = null) where TM : ITopicMessage
     {
-        var attributes = _attributeUtil.GetAll<StreamAttribute>(state);
+        var attributes = _attributeUtil.GetAll<StreamAttribute>(stateType);
         var topics = attributes
             .Select(x =>
             {
                 var action = typeof(TM);
+                var state = x.SourceType?.Name ?? stateType.Name;
                 var topic = topicName == null ? x.GetTopic(action) : $"{x.GetTopic(action)}-{topicName}";
-                return $"in-memory://{state.Name}/{topic}";
+                return $"in-memory://{state}/{topic}";
             })
             .ToArray();
 

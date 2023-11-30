@@ -24,11 +24,11 @@ public class PulsarTopicResolver : ITopicResolver
     public string[] GetTopics<TM>(Type state, string topicName = null) where TM : ITopicMessage
     {
         var persistent = EventStreamingConstants.Persistent;
-        var pulsarAttr = _attributeUtil.GetOne<PulsarNamespaceAttribute>(state);
         var attributes = _attributeUtil.GetAll<StreamAttribute>(state);
         var topics = attributes
             .Select(x =>
             {
+                var pulsarAttr = _attributeUtil.GetOne<PulsarNamespaceAttribute>(x.SourceType ?? state);
                 var tenant = pulsarAttr?.Tenant ?? PulsarTopicConstants.DefaultTenant;
                 var @namespace = !PulsarTopicConstants.MessageTypes.Contains(typeof(TM))
                     ? pulsarAttr?.Namespace ?? PulsarTopicConstants.DefaultNamespace

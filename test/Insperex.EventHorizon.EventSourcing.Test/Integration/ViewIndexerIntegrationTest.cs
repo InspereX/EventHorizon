@@ -19,6 +19,8 @@ using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStore.Models;
 using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
+using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -55,8 +57,8 @@ public class ViewIndexerIntegrationTest : IAsyncLifetime
                         // Stores
                         .AddInMemorySnapshotStore()
                         .AddInMemoryViewStore()
-                        // .AddElasticViewStore()
                         .AddInMemoryEventStream();
+                        // .AddPulsarEventStream(hostContext.Configuration.GetSection("Pulsar").Bind);
                 });
             })
             .UseSerilog((_, config) =>
