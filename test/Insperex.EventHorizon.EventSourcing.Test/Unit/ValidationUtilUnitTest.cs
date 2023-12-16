@@ -22,8 +22,8 @@ public class ValidationUtilUnitTest
     [Fact]
     public void TestSnapshotPassed()
     {
-        _validationUtil.ValidateSnapshot<Account>();
-        _validationUtil.ValidateSnapshot<User>();
+        _validationUtil.ValidateSnapshot<AccountState>();
+        _validationUtil.ValidateSnapshot<UserState>();
     }
     
     [Fact]

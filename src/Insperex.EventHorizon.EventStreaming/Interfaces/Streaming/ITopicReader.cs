@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.EventStreaming.Models;
 
 namespace Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 

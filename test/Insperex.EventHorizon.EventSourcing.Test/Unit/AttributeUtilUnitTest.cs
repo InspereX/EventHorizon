@@ -17,7 +17,7 @@ public class AttributeUtilUnitTest
     public AttributeUtilUnitTest()
     {
         _attributeUtil = new AttributeUtil();
-        _type = typeof(Account);
+        _type = typeof(AccountState);
     }
 
     [Fact]

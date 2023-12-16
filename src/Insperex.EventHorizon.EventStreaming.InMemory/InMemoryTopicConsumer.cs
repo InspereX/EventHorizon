@@ -9,6 +9,7 @@ using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.EventStreaming.InMemory.Databases;
 using Insperex.EventHorizon.EventStreaming.InMemory.Failure;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Logging;

@@ -20,7 +20,7 @@ namespace Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
 [MongoCollection(ReadPreferenceMode = ReadPreferenceMode.SecondaryPreferred,
     ReadConcernLevel = ReadConcernLevel.Majority,
     WriteConcernLevel = WriteConcernLevel.Majority)]
-public class Account : IState,
+public class AccountState : IState,
     IHandleRequest<OpenAccount, AccountResponse>,
     IHandleRequest<Withdrawal, AccountResponse>,
     IHandleRequest<Deposit, AccountResponse>,

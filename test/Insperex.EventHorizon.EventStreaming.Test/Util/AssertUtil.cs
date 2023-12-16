@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Xunit;
 
 namespace Insperex.EventHorizon.EventStreaming.Test.Util;

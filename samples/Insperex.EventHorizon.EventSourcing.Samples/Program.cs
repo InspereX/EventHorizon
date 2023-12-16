@@ -51,11 +51,11 @@ public class Program
                                 .AddPulsarEventStream(context.Configuration.GetSection("Pulsar").Bind)
 
                                 // Hosted
-                                .ApplyRequestsToSnapshot<Account>()
+                                .ApplyRequestsToSnapshot<AccountState>()
                                 .ApplyEventsToView<SearchAccountView>(h =>
                                     h.UseMiddleware<SearchAccountViewMiddleware>())
 
-                                .AddSubscription<AccountConsumer, Event>(s => s.AddStream<Account>());
+                                .AddSubscription<AccountConsumer, Event>(s => s.AddStream<AccountState>());
                         });
                     })
                     .Configure(app =>
@@ -63,8 +63,8 @@ public class Program
                         app.UseSwagger();
                         app.UseSwaggerUI();
                         app.UseRouting();
-                        app.UseEndpoints(e => e.MapEventSourcingEndpoints<Account>());
-                        app.UseEndpoints(e => e.MapEventSourcingEndpoints<User>());
+                        app.UseEndpoints(e => e.MapEventSourcingEndpoints<AccountState>());
+                        app.UseEndpoints(e => e.MapEventSourcingEndpoints<UserState>());
                         // app.MapEventSourcingEndpoints<Account>();
                         // app.MapEventSourcingEndpoints<User>();
                     });

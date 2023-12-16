@@ -10,6 +10,6 @@ namespace Insperex.EventHorizon.EventSourcing.Samples.Models.View;
 public class SearchAccountView : IState
 {
     public string Id { get; set; }
-    public User User { get; set; }
+    public UserState UserState { get; set; }
     public AccountView Account { get; set; }
 }

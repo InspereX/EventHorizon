@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.EventStreaming.Models;
 
 namespace Insperex.EventHorizon.EventStreaming.InMemory.Failure;
 

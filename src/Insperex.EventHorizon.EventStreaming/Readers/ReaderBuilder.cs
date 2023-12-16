@@ -4,30 +4,31 @@ using System.Threading;
 using Insperex.EventHorizon.Abstractions.Exceptions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventStreaming.Readers;
 
 public class ReaderBuilder<T> where T : class, ITopicMessage, new()
 {
-    private readonly IStreamFactory _factory;
-    private readonly ILoggerFactory _loggerFactory;
+    private readonly TopicResolver _topicResolver;
+    private readonly IStreamFactory _streamFactory;
     private DateTime? _endDateTime;
     private bool _isBeginning = true;
     private DateTime? _startDateTime;
     private string[] _keys;
     private string _topic;
 
-    public ReaderBuilder(IStreamFactory factory, ILoggerFactory loggerFactory)
+    public ReaderBuilder(TopicResolver topicResolver, IStreamFactory streamFactory)
     {
-        _factory = factory;
-        _loggerFactory = loggerFactory;
+        _topicResolver = topicResolver;
+        _streamFactory = streamFactory;
     }
 
     public ReaderBuilder<T> AddStream<TS>(string topicName = null)
     {
         if (_topic != null) throw new MultiTopicNotSupportedException<ReaderBuilder<T>>();
-        _topic = _factory.GetTopicResolver().GetTopics<T>(typeof(TS), topicName).FirstOrDefault();
+        _topic = _topicResolver.GetTopics<T>(typeof(TS), true, topicName).FirstOrDefault();
         return this;
     }
 
@@ -65,7 +66,7 @@ public class ReaderBuilder<T> where T : class, ITopicMessage, new()
             EndDateTime = _endDateTime,
             IsBeginning = _isBeginning
         };
-        var consumer = _factory.CreateReader<T>(config);
+        var consumer = _streamFactory.CreateReader<T>(config);
 
         return new Reader<T>(consumer);
     }

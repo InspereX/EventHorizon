@@ -5,6 +5,7 @@ using System.Linq;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.EventStreaming.InMemory.Databases;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Insperex.EventHorizon.EventStreaming.Subscriptions.Backoff;
 using Microsoft.Extensions.Logging;

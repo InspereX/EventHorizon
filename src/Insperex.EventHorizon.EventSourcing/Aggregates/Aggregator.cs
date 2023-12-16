@@ -14,7 +14,9 @@ using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStreaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Publishers;
+using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventSourcing.Aggregates;
@@ -24,7 +26,6 @@ public class Aggregator<TParent, T>
     where T : class, IState
 {
     private readonly AggregateConfig<T> _config;
-    private readonly StreamUtil _streamUtil;
     private readonly ICrudStore<TParent> _crudStore;
     private readonly ILogger<Aggregator<TParent, T>> _logger;
     private readonly StreamingClient _streamingClient;
@@ -34,13 +35,11 @@ public class Aggregator<TParent, T>
         ICrudStore<TParent> crudStore,
         StreamingClient streamingClient,
         AggregateConfig<T> config,
-        StreamUtil streamUtil,
         ILogger<Aggregator<TParent, T>> logger)
     {
         _crudStore = crudStore;
         _streamingClient = streamingClient;
         _config = config;
-        _streamUtil = streamUtil;
         _logger = logger;
     }
 

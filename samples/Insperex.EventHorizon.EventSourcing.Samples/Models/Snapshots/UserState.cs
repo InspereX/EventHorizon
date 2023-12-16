@@ -14,7 +14,7 @@ namespace Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
 [Stream("$type")]
 [PulsarNamespace("test_bank", "user")]
 [SnapshotStore("test_snapshot_bank_user")]
-public class User : IState,
+public class UserState : IState,
     IHandleCommand<ChangeUserName>,
     IApplyEvent<UserNameChangedV2>
 {
@@ -34,14 +34,14 @@ public class User : IState,
 }
 
 // Commands
-public record ChangeUserName([property: StreamPartitionKey]string Name) : ICommand<User>;
+public record ChangeUserName([property: StreamPartitionKey]string Name) : ICommand<UserState>;
 
 // Events
-public record UserNameChangedV2(string Name) : IEvent<User>;
+public record UserNameChangedV2(string Name) : IEvent<UserState>;
 
 // Legacy Events
 [Obsolete]
-public record UserNameChanged(string Name) : IEvent<User>, IUpgradeTo<UserNameChangedV2>
+public record UserNameChanged(string Name) : IEvent<UserState>, IUpgradeTo<UserNameChangedV2>
 {
     public UserNameChangedV2 Upgrade()
     {

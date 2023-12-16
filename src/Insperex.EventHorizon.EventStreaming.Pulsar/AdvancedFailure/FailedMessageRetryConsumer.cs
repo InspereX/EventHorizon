@@ -6,8 +6,11 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Models;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
+using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventStreaming.Pulsar.AdvancedFailure;
@@ -27,11 +30,11 @@ public class FailedMessageRetryConsumer<T>: ITopicConsumer<T> where T : class, I
     private readonly int _batchSize;
 
     public FailedMessageRetryConsumer(SubscriptionConfig<T> config, StreamFailureState<T> streamFailureState,
-        PulsarClientResolver clientResolver, StreamUtil streamUtil, ILoggerFactory loggerFactory)
+        PulsarClientResolver clientResolver, TopicResolver topicResolver, ILoggerFactory loggerFactory)
     {
         _batchSize = config.BatchSize ?? 1000;
         _streamFailureState = streamFailureState;
-        _reader = new RetryTopicReader<T>(clientResolver, streamUtil);
+        _reader = new RetryTopicReader<T>(clientResolver, topicResolver);
         _logger = loggerFactory.CreateLogger<FailedMessageRetryConsumer<T>>();
     }
 

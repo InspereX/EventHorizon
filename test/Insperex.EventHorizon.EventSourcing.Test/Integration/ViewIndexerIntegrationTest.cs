@@ -89,8 +89,8 @@ public class ViewIndexerIntegrationTest : IAsyncLifetime
         await _userAccountStore.DropDatabaseAsync(CancellationToken.None);
 
         // Delete Event Dbs
-        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(Account));
-        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(User));
+        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(AccountState));
+        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(UserState));
 
         await _host.StopAsync();
         _host.Dispose();
@@ -100,7 +100,7 @@ public class ViewIndexerIntegrationTest : IAsyncLifetime
     public async Task TestViewIndexer()
     {
         var streamId = "123";
-        var publisher = _streamingClient.CreatePublisher<Event>().AddStream<Account>().Build();
+        var publisher = _streamingClient.CreatePublisher<Event>().AddStream<AccountState>().Build();
 
         // Setup Event
         await publisher.PublishAsync(new Event(streamId, new AccountOpened(100)));

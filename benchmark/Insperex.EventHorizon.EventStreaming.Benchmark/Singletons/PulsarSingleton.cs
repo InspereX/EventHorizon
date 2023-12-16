@@ -12,6 +12,7 @@ using Insperex.EventHorizon.EventStreaming.Pulsar;
 using Insperex.EventHorizon.EventStreaming.Readers;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Insperex.EventHorizon.EventStreaming.Test.Util;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -49,7 +50,7 @@ public class PulsarSingleton : IAsyncDisposable
         if (Consumers.ContainsKey(type))
             return Consumers[type];
 
-        var topics = Factory.Value.GetTopicResolver().GetTopics<Event>(type);
+        var topics = StreamClient.Value.GetTopicResolver().GetTopics<Event>(type);
         Consumers[type] = Factory.Value.CreateConsumer(new SubscriptionConfig<Event>
         {
             Topics = topics,

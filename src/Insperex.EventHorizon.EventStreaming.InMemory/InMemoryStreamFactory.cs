@@ -54,6 +54,6 @@ public class InMemoryStreamFactory : IStreamFactory
 
     public ITopicResolver GetTopicResolver()
     {
-        return new InMemoryTopicResolver(_attributeUtil);
+        return new InMemoryTopicResolver();
     }
 }

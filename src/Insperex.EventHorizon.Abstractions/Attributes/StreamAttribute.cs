@@ -25,10 +25,5 @@ namespace Insperex.EventHorizon.Abstractions.Attributes
             SourceType = sourceType;
             Topic = attr.Topic;
         }
-
-        public string GetTopic(Type action)
-        {
-            return Topic.Replace(StreamingConstants.TypeKey, action.Name);
-        }
     }
 }

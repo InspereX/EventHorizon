@@ -25,7 +25,6 @@ public class PulsarTopicProducer<T> : ITopicProducer<T>
 {
     private readonly PulsarClientResolver _clientResolver;
     private readonly PublisherConfig _config;
-    private readonly AttributeUtil _attributeUtil;
     private readonly ITopicAdmin<T> _admin;
     private readonly OTelProducerInterceptor.OTelProducerInterceptor<T> _intercept;
     private readonly string _publisherName;
@@ -35,12 +34,10 @@ public class PulsarTopicProducer<T> : ITopicProducer<T>
     public PulsarTopicProducer(
         PulsarClientResolver clientResolver,
         PublisherConfig config,
-        AttributeUtil attributeUtil,
         ITopicAdmin<T> admin)
     {
         _clientResolver = clientResolver;
         _config = config;
-        _attributeUtil = attributeUtil;
         _admin = admin;
         _publisherName = NameUtil.AssemblyNameWithGuid;
         _intercept = new OTelProducerInterceptor.OTelProducerInterceptor<T>(

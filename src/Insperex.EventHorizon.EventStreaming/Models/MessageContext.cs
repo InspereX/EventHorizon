@@ -3,34 +3,33 @@ using System.Linq;
 using System.Text.Json;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
-using Insperex.EventHorizon.Abstractions.Util;
+using Insperex.EventHorizon.Abstractions.Models;
+using Insperex.EventHorizon.EventStreaming.Util;
 
-namespace Insperex.EventHorizon.Abstractions.Models;
+namespace Insperex.EventHorizon.EventStreaming.Models;
 
 public class MessageContext<T> where T : ITopicMessage
 {
-    private readonly StreamUtil _streamUtil;
+    private readonly Type _type;
     public T Data { get; set; }
     public TopicData TopicData { get; set; }
 
-    public MessageContext(StreamUtil streamUtil, T data, TopicData topicData)
+    public MessageContext(Type type, T data, TopicData topicData)
     {
-        _streamUtil = streamUtil;
+        _type = type;
         Data = data;
         TopicData = topicData;
     }
 
     public object GetPayload()
     {
-        var action = _streamUtil.GetTypeFromTopic(TopicData.TopicName, Data.Type);
-        return JsonSerializer.Deserialize(Data.Payload, action);
+        return JsonSerializer.Deserialize(Data.Payload, _type);
     }
 
     public T Upgrade()
     {
-        var action = _streamUtil.GetTypeFromTopic(TopicData.TopicName, Data.Type);
-        var payload = JsonSerializer.Deserialize(Data.Payload, action);
-        var upgrade = action
+        var payload = JsonSerializer.Deserialize(Data.Payload, _type);
+        var upgrade = _type
             .GetInterfaces()
             .FirstOrDefault(x => x.Name == typeof(IUpgradeTo<>).Name)?.GetMethod("Upgrade");
 

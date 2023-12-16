@@ -22,7 +22,11 @@ using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStore.Models;
 using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
+using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
+using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -40,11 +44,11 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     private readonly IHost _host;
     private readonly StreamingClient _streamingClient;
     private Stopwatch _stopwatch;
-    private readonly ICrudStore<Snapshot<Account>> _snapshotStore;
-    private readonly Aggregator<Snapshot<Account>, Account> _accountAggregator;
-    private readonly Aggregator<Snapshot<User>, User> _userAggregator;
-    private readonly EventSourcingClient<Account> _eventSourcingClient;
-    private readonly StreamUtil _streamUtil;
+    private readonly ICrudStore<Snapshot<AccountState>> _snapshotStore;
+    private readonly Aggregator<Snapshot<AccountState>, AccountState> _accountAggregator;
+    private readonly Aggregator<Snapshot<UserState>, UserState> _userAggregator;
+    private readonly EventSourcingClient<AccountState> _eventSourcingClient;
+    private readonly TopicResolver _topicResolver;
 
     public AggregatorIntegrationTest(ITestOutputHelper output)
     {
@@ -57,8 +61,8 @@ public class AggregatorIntegrationTest : IAsyncLifetime
                     x.AddEventSourcing()
 
                         // Hosts
-                        .ApplyRequestsToSnapshot<Account>()
-                        .ApplyCommandsToSnapshot<User>()
+                        .ApplyRequestsToSnapshot<AccountState>()
+                        .ApplyCommandsToSnapshot<UserState>()
                         .ApplyRequestsToSnapshot<SearchAccountView>()
 
                         // Stores
@@ -78,14 +82,14 @@ public class AggregatorIntegrationTest : IAsyncLifetime
             .Build()
             .AddTestBucketIds();
 
-        _eventSourcingClient = _host.Services.GetRequiredService<EventSourcingClient<Account>>();
+        _eventSourcingClient = _host.Services.GetRequiredService<EventSourcingClient<AccountState>>();
         _accountAggregator = _eventSourcingClient.Aggregator().Build();
-        _userAggregator = _host.Services.GetRequiredService<EventSourcingClient<User>>().Aggregator().Build();
+        _userAggregator = _host.Services.GetRequiredService<EventSourcingClient<UserState>>().Aggregator().Build();
 
 
         _streamingClient = _host.Services.GetRequiredService<StreamingClient>();
-        _snapshotStore = _host.Services.GetRequiredService<ISnapshotStoreFactory<Account>>().GetSnapshotStore();
-        _streamUtil = _host.Services.GetRequiredService<StreamUtil>();
+        _snapshotStore = _host.Services.GetRequiredService<ISnapshotStoreFactory<AccountState>>().GetSnapshotStore();
+        _topicResolver = _streamingClient.GetTopicResolver();
     }
 
     public async Task InitializeAsync()
@@ -98,7 +102,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     {
         _output.WriteLine($"Test Ran in {_stopwatch.ElapsedMilliseconds}ms");
         await _snapshotStore.DropDatabaseAsync(CancellationToken.None);
-        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(Account));
+        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(AccountState));
         await _host.StopAsync();
         _host.Dispose();
     }
@@ -107,7 +111,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     public async Task TestRebuild()
     {
         var streamId = EventSourcingFakers.Faker.Random.AlphaNumeric(9);
-        var publisher = _streamingClient.CreatePublisher<Event>().AddStream<Account>().Build();
+        var publisher = _streamingClient.CreatePublisher<Event>().AddStream<AccountState>().Build();
 
         // Setup Event
         await publisher.PublishAsync(streamId, new AccountOpened(100));
@@ -133,10 +137,10 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         var command2 = new ChangeUserName("Joe");
 
         // Act
-        var topic = _streamUtil.GetTopic(command1.GetType());
+        var topic = _streamingClient.GetTopicResolver().GetTopic<Command>(typeof(UserState), false);
         var topicData = new TopicData("1", topic, DateTime.UtcNow);
-        var res1 = await _userAggregator.HandleAsync(new MessageContext<Command>(_streamUtil, new Command(streamId, command1), topicData), CancellationToken.None);
-        var res2 = await _userAggregator.HandleAsync(new MessageContext<Command>(_streamUtil, new Command(streamId, command2), topicData), CancellationToken.None);
+        var res1 = await _userAggregator.HandleAsync(_topicResolver.CreateMessageContext(topicData, new Command(streamId, command1)), CancellationToken.None);
+        var res2 = await _userAggregator.HandleAsync(_topicResolver.CreateMessageContext(topicData, new Command(streamId, command2)), CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _userAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);
@@ -156,9 +160,9 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         var @event = new AccountOpened(100);
 
         // Act
-        var topic = _streamUtil.GetTopic(@event.GetType());
+        var topic = _topicResolver.GetTopic<Command>(typeof(UserState), false);
         var topicData = new TopicData("1", topic, DateTime.UtcNow);
-        var res = await _accountAggregator.HandleAsync(new MessageContext<Event>(_streamUtil, new Event(streamId, 1, @event), topicData), CancellationToken.None);
+        var res = await _accountAggregator.HandleAsync(_topicResolver.CreateMessageContext(topicData, new Event(streamId, 1, @event)), CancellationToken.None);
 
         // Assert Account
         var aggregate1  = await _accountAggregator.GetAggregateFromStateAsync(streamId, CancellationToken.None);

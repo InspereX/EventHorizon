@@ -4,12 +4,14 @@ using System.Threading;
 using Insperex.EventHorizon.Abstractions.Exceptions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventStreaming.Publishers;
 
 public class PublisherBuilder<T> where T : class, ITopicMessage, new()
 {
+    private readonly TopicResolver _topicResolver;
     private readonly IStreamFactory _factory;
     private readonly ILoggerFactory _loggerFactory;
     private string _topic;
@@ -18,10 +20,11 @@ public class PublisherBuilder<T> where T : class, ITopicMessage, new()
     private int _batchSize = 100;
     private bool _isOrderGuaranteed = true;
 
-    public PublisherBuilder(IStreamFactory factory, ILoggerFactory loggerFactory)
+    public PublisherBuilder(TopicResolver topicResolver, IStreamFactory factory, ILoggerFactory loggerFactory)
     {
-        _factory = factory;
+        _topicResolver = topicResolver;
         _loggerFactory = loggerFactory;
+        _factory = factory;
     }
 
     internal PublisherBuilder<T> AddTopic(string topicName = null)
@@ -34,7 +37,7 @@ public class PublisherBuilder<T> where T : class, ITopicMessage, new()
     public PublisherBuilder<T> AddStream<TS>(string topicName = null)
     {
         if (_topic != null) throw new MultiTopicNotSupportedException<PublisherBuilder<T>>();
-        _topic = _factory.GetTopicResolver().GetTopics<T>(typeof(TS), topicName).FirstOrDefault();
+        _topic = _topicResolver.GetTopics<T>(typeof(TS), false, topicName).FirstOrDefault();
         return this;
     }
 

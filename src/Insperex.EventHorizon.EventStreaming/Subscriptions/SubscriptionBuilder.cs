@@ -8,6 +8,7 @@ using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Subscriptions.Backoff;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventStreaming.Subscriptions;
@@ -15,8 +16,8 @@ namespace Insperex.EventHorizon.EventStreaming.Subscriptions;
 public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
 {
     private readonly IStreamFactory _factory;
+    private readonly TopicResolver _topicResolver;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly ITopicResolver _topicResolver;
     private readonly List<string> _topics;
     private int? _batchSize = 1000;
     private bool? _isBeginning = true;
@@ -30,12 +31,12 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
     private SubscriptionType _subscriptionType = Abstractions.Models.SubscriptionType.KeyShared;
     private bool _isPreload;
 
-    public SubscriptionBuilder(IStreamFactory factory, ILoggerFactory loggerFactory)
+    public SubscriptionBuilder(TopicResolver topicResolver, IStreamFactory factory, ILoggerFactory loggerFactory)
     {
-        _factory = factory;
+        _topicResolver = topicResolver;
         _loggerFactory = loggerFactory;
         _topics = new List<string>();
-        _topicResolver = _factory.GetTopicResolver();
+        _factory = factory;
     }
 
     public SubscriptionBuilder<T> AddStream<TS>(string topic = null)
@@ -43,11 +44,11 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
         var streamType = typeof(TS);
 
         // Add Main Topic
-        _topics.AddRange(_topicResolver.GetTopics<T>(streamType, topic));
+        _topics.AddRange(_topicResolver.GetTopics<T>(streamType, true, topic));
 
         // Add Sub Topics (for IState only)
         var topics = AssemblyUtil.StateSubStates.GetValueOrDefault(streamType)?
-            .SelectMany(x => _topicResolver.GetTopics<T>(x, topic))
+            .SelectMany(x => _topicResolver.GetTopics<T>(x, true, topic))
             .ToArray();
 
         if(topics != null)

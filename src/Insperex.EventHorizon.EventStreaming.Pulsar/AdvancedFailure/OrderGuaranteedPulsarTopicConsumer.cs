@@ -7,8 +7,10 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Models;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Logging;
 
@@ -58,7 +60,7 @@ public class OrderGuaranteedPulsarTopicConsumer<T> : ITopicConsumer<T> where T :
     public OrderGuaranteedPulsarTopicConsumer(
         PulsarClientResolver clientResolver,
         SubscriptionConfig<T> config,
-        StreamUtil streamUtil,
+        TopicResolver topicResolver,
         IStreamFactory streamFactory,
         ILoggerFactory loggerFactory)
     {
@@ -71,8 +73,8 @@ public class OrderGuaranteedPulsarTopicConsumer<T> : ITopicConsumer<T> where T :
             loggerFactory.CreateLogger<FailureStateTopic<T>>());
         _streamFailureState = new(_config, loggerFactory.CreateLogger<StreamFailureState<T>>(),
             failureStateTopic);
-        _primaryTopicConsumer = new(_streamFailureState, clientResolver, _config, streamUtil, _topicAdmin, _consumerName);
-        _failedMessageRetryConsumer = new(_config, _streamFailureState, clientResolver, streamUtil, loggerFactory);
+        _primaryTopicConsumer = new(_streamFailureState, clientResolver, _config, topicResolver, _topicAdmin, _consumerName);
+        _failedMessageRetryConsumer = new(_config, _streamFailureState, clientResolver, topicResolver, loggerFactory);
 
         _phaseHandlers = new()
         {

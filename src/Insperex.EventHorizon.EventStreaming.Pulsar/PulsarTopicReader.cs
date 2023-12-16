@@ -8,9 +8,11 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Utils;
 using Insperex.EventHorizon.EventStreaming.Readers;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Insperex.EventHorizon.EventStreaming.Util;
 using Pulsar.Client.Api;
 using Pulsar.Client.Common;
@@ -22,19 +24,19 @@ public class PulsarTopicReader<T> : ITopicReader<T> where T : ITopicMessage, new
 {
     private readonly PulsarClientResolver _clientResolver;
     private readonly ReaderConfig _config;
-    private readonly StreamUtil _streamUtil;
+    private readonly TopicResolver _topicResolver;
     private readonly ITopicAdmin<T> _admin;
     private IReader<T> _reader;
 
     public PulsarTopicReader(
         PulsarClientResolver clientResolver,
         ReaderConfig config,
-        StreamUtil streamUtil,
+        TopicResolver topicResolver,
         ITopicAdmin<T> admin)
     {
         _clientResolver = clientResolver;
         _config = config;
-        _streamUtil = streamUtil;
+        _topicResolver = topicResolver;
         _admin = admin;
     }
 
@@ -71,7 +73,9 @@ public class PulsarTopicReader<T> : ITopicReader<T> where T : ITopicMessage, new
                 break;
 
             var topicData = PulsarMessageMapper.MapTopicData(list.Count.ToString(CultureInfo.InvariantCulture), message, _config.Topic);
-            list.Add(new MessageContext<T>(_streamUtil, message.GetValue(), topicData));
+            var data = message.GetValue();
+
+            list.Add(_topicResolver.CreateMessageContext(topicData, data));
         } while (message != null && list.Count < batchSize && await reader.HasMessageAvailableAsync());
 
         return list.ToArray();

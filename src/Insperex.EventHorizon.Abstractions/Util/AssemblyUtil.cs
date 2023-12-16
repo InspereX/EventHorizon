@@ -31,7 +31,7 @@ public static class AssemblyUtil
 
     #region States
 
-    public static Type[] States = Types.Where(x => typeof(IState).IsAssignableFrom(x)).ToArray();
+    public static Type[] States = GetInterfaceOf(typeof(IState));
 
     public static readonly ImmutableDictionary<Type, PropertyInfo[]> StatePropertiesWithSubStates = States.ToImmutableDictionary(x => x, GetStatePropertiesWithState);
 
@@ -46,10 +46,15 @@ public static class AssemblyUtil
 
     #region Actions
 
-    public static Type[] Actions = Types.Where(x => typeof(IAction).IsAssignableFrom(x)).ToArray();
+    public static Type[] Actions = GetInterfaceOf(typeof(IAction));
+    public static Type[] Events = GetInterfaceOf(typeof(IEvent));
+    public static Type[] Commands = GetInterfaceOf(typeof(ICommand));
+    public static Type[] Requests = GetInterfaceOf(typeof(IRequest));
+    public static Type[] Responses = GetInterfaceOf(typeof(IResponse));
 
     public static readonly Dictionary<Type, Type[]> StateToCommandsLookup = GetStatesToActionLookup(typeof(ICommand<>));
     public static readonly Dictionary<Type, Type[]> StateToRequestsLookup = GetStatesToActionLookup(typeof(IRequest<,>));
+    public static readonly Dictionary<Type, Type[]> StateToResponsesLookup = GetStatesToActionLookup(typeof(IResponse<>));
     public static readonly Dictionary<Type, Type[]> StateToEventsLookup = GetStatesToActionLookup(typeof(IEvent<>));
 
     private static Dictionary<Type, Type[]> GetStatesToActionLookup(Type type) => States
@@ -57,6 +62,8 @@ public static class AssemblyUtil
                 && i.GetGenericTypeDefinition() == type
                 && i.GetGenericArguments()[0].Name == x.Name))
             .ToArray());
+
+    private static Type[] GetInterfaceOf(Type interfaceType) => Types.Where(x => interfaceType.IsAssignableFrom(x) && !x.IsAbstract && !x.IsInterface).ToArray();
 
     #endregion
 }

@@ -7,6 +7,8 @@ using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Publishers;
 using Insperex.EventHorizon.EventStreaming.Readers;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
+using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -20,15 +22,9 @@ namespace Insperex.EventHorizon.EventStreaming.InMemory.Extensions
             configurator.Collection.AddSingleton<ConsumerDatabase>();
             configurator.Collection.AddSingleton<IndexDatabase>();
 
-            configurator.Collection.Replace(ServiceDescriptor.Describe(
-                typeof(IStreamFactory),
-                typeof(InMemoryStreamFactory),
-                ServiceLifetime.Singleton));
-
-            configurator.Collection.Replace(ServiceDescriptor.Describe(
-                typeof(ITopicAdmin<>),
-                typeof(InMemoryTopicAdmin<>),
-                ServiceLifetime.Singleton));
+            configurator.Collection.Replace(ServiceDescriptor.Describe(typeof(IStreamFactory), typeof(InMemoryStreamFactory), ServiceLifetime.Singleton));
+            configurator.Collection.Replace(ServiceDescriptor.Describe(typeof(ITopicAdmin<>), typeof(InMemoryTopicAdmin<>), ServiceLifetime.Singleton));
+            configurator.Collection.Replace(ServiceDescriptor.Describe(typeof(ITopicResolver), typeof(InMemoryTopicResolver), ServiceLifetime.Singleton));
 
             configurator.Collection.AddSingleton(typeof(StreamingClient));
             configurator.Collection.AddSingleton(typeof(PublisherBuilder<>));
@@ -36,7 +32,7 @@ namespace Insperex.EventHorizon.EventStreaming.InMemory.Extensions
             configurator.Collection.AddSingleton(typeof(SubscriptionBuilder<>));
             configurator.Collection.AddSingleton(typeof(Admin<>));
             configurator.Collection.AddSingleton<AttributeUtil>();
-            configurator.Collection.AddSingleton<StreamUtil>();
+            configurator.Collection.AddSingleton<TopicResolver>();
             configurator.Collection.AddSingleton<FailureHandlerFactory>();
 
             return configurator;

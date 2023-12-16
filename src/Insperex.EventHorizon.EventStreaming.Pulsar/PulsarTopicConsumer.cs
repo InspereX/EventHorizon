@@ -7,10 +7,12 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Utils;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Insperex.EventHorizon.EventStreaming.Subscriptions.Backoff;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Insperex.EventHorizon.EventStreaming.Tracing;
 using Insperex.EventHorizon.EventStreaming.Util;
 using Pulsar.Client.Api;
@@ -25,7 +27,7 @@ public class PulsarTopicConsumer<T> : ITopicConsumer<T> where T : ITopicMessage,
 {
     private readonly PulsarClientResolver _clientResolver;
     private readonly SubscriptionConfig<T> _config;
-    private readonly StreamUtil _streamUtil;
+    private readonly TopicResolver _topicResolver;
     private readonly ITopicAdmin<T> _admin;
     private readonly OtelConsumerInterceptor.OTelConsumerInterceptor<T> _intercept;
     private IConsumer<T> _consumer;
@@ -34,12 +36,12 @@ public class PulsarTopicConsumer<T> : ITopicConsumer<T> where T : ITopicMessage,
     public PulsarTopicConsumer(
         PulsarClientResolver clientResolver,
         SubscriptionConfig<T> config,
-        StreamUtil streamUtil,
+        TopicResolver topicResolver,
         ITopicAdmin<T> admin)
     {
         _clientResolver = clientResolver;
         _config = config;
-        _streamUtil = streamUtil;
+        _topicResolver = topicResolver;
         _admin = admin;
         _intercept = new OtelConsumerInterceptor.OTelConsumerInterceptor<T>(
             TraceConstants.ActivitySourceName, PulsarClient.Logger);
@@ -65,8 +67,9 @@ public class PulsarTopicConsumer<T> : ITopicConsumer<T> where T : ITopicMessage,
                     var topic = _config.Topics.Length == 1 ? _config.Topics.First() : x.MessageId.TopicName;
 
                     var id = Guid.NewGuid().ToString();
-                    var context = new MessageContext<T>(_streamUtil, x.GetValue(),
-                        PulsarMessageMapper.MapTopicData(id, x, topic));
+                    var data = x.GetValue();
+                    var topicData = PulsarMessageMapper.MapTopicData(id, x, topic);
+                    var context = _topicResolver.CreateMessageContext(topicData, data);
 
                     _unackedMessages[id] = x;
 

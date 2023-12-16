@@ -44,7 +44,7 @@ public class SenderIntegrationTest : IAsyncLifetime
     private readonly Sender _sender;
     private Stopwatch _stopwatch;
     private readonly Sender _sender2;
-    private readonly EventSourcingClient<Account> _eventSourcingClient;
+    private readonly EventSourcingClient<AccountState> _eventSourcingClient;
     private readonly StreamingClient _streamingClient;
     private readonly IHost _consumerHost;
 
@@ -83,7 +83,7 @@ public class SenderIntegrationTest : IAsyncLifetime
                     x.AddEventSourcing()
 
                         // Hosts
-                        .ApplyRequestsToSnapshot<Account>(a => a.BatchSize(10000))
+                        .ApplyRequestsToSnapshot<AccountState>(a => a.BatchSize(10000))
 
                         // Stores
                         .AddInMemoryViewStore()
@@ -113,7 +113,7 @@ public class SenderIntegrationTest : IAsyncLifetime
             .GetErrorResult((req, status, error) => new AccountResponse(status, error))
             .Build();
 
-        _eventSourcingClient = _senderHost.Services.GetRequiredService<EventSourcingClient<Account>>();
+        _eventSourcingClient = _senderHost.Services.GetRequiredService<EventSourcingClient<AccountState>>();
         _streamingClient = _senderHost.Services.GetRequiredService<StreamingClient>();
     }
 
@@ -128,8 +128,8 @@ public class SenderIntegrationTest : IAsyncLifetime
     {
         _output.WriteLine($"Test Ran in {_stopwatch.ElapsedMilliseconds}ms");
         await _eventSourcingClient.GetSnapshotStore().DropDatabaseAsync(CancellationToken.None);
-        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(Account));
-        await _streamingClient.GetAdmin<Request>().DeleteTopicAsync(typeof(Account));
+        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(AccountState));
+        await _streamingClient.GetAdmin<Request>().DeleteTopicAsync(typeof(AccountState));
         await _senderHost.StopAsync();
         await _consumerHost.StopAsync();
         _senderHost.Dispose();
@@ -187,7 +187,7 @@ public class SenderIntegrationTest : IAsyncLifetime
             // Send Command
             var largeRequests  = Enumerable.Range(0, numOfEvents).Select(x => new Deposit(1)).ToArray();
             var allRequests = largeRequests.Select(x => new Request(Guid.NewGuid().ToString(), x)).ToArray();
-            var responses = await _sender2.SendAndReceiveAsync<Account>(allRequests);
+            var responses = await _sender2.SendAndReceiveAsync<AccountState>(allRequests);
 
             Assert.Equal(numOfEvents, responses.Length);
             foreach (var response in responses)

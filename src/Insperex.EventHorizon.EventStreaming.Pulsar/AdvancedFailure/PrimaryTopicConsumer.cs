@@ -7,11 +7,14 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
+using Insperex.EventHorizon.EventStreaming.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Models;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Utils;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
 using Insperex.EventHorizon.EventStreaming.Tracing;
+using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Logging;
 using Pulsar.Client.Api;
 using Pulsar.Client.Common;
@@ -29,7 +32,7 @@ internal sealed class PrimaryTopicConsumer<T>: ITopicConsumer<T> where T : ITopi
     private readonly StreamFailureState<T> _streamFailureState;
     private readonly PulsarClientResolver _clientResolver;
     private readonly SubscriptionConfig<T> _config;
-    private readonly StreamUtil _streamUtil;
+    private readonly TopicResolver _topicResolver;
     private readonly ITopicAdmin<T> _admin;
     private readonly string _consumerName;
     private readonly OtelConsumerInterceptor.OTelConsumerInterceptor<T> _intercept;
@@ -41,14 +44,14 @@ internal sealed class PrimaryTopicConsumer<T>: ITopicConsumer<T> where T : ITopi
         StreamFailureState<T> streamFailureState,
         PulsarClientResolver clientResolver,
         SubscriptionConfig<T> config,
-        StreamUtil streamUtil,
+        TopicResolver topicResolver,
         ITopicAdmin<T> admin,
         string consumerName)
     {
         _streamFailureState = streamFailureState;
         _clientResolver = clientResolver;
         _config = config;
-        _streamUtil = streamUtil;
+        _topicResolver = topicResolver;
         _admin = admin;
         _consumerName = consumerName;
         _intercept = new OtelConsumerInterceptor.OTelConsumerInterceptor<T>(
@@ -92,10 +95,12 @@ internal sealed class PrimaryTopicConsumer<T>: ITopicConsumer<T> where T : ITopi
 
             var contexts = messagesToRelay
                 .Select(x =>
-                    new MessageContext<T>(_streamUtil, x.Data, PulsarMessageMapper.MapTopicData(
+                {
+                    var topicData = PulsarMessageMapper.MapTopicData(
                         x.OriginalMessage.SequenceId.ToString(CultureInfo.InvariantCulture),
-                        x.OriginalMessage, x.Topic))
-                )
+                        x.OriginalMessage, x.Topic);
+                    return _topicResolver.CreateMessageContext(topicData, x.Data);
+                })
                 .ToArray();
 
             return contexts;

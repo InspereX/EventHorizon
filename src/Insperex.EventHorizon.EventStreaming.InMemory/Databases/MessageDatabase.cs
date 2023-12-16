@@ -6,18 +6,21 @@ using System.Linq;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Util;
+using Insperex.EventHorizon.EventStreaming.Models;
+using Insperex.EventHorizon.EventStreaming.TopicResolvers;
+using Insperex.EventHorizon.EventStreaming.Util;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventStreaming.InMemory.Databases;
 
 public class MessageDatabase
 {
-    private readonly StreamUtil _streamUtil;
+    private readonly TopicResolver _topicResolver;
     private readonly ConcurrentDictionary<string, List<object>> _messages = new();
 
-    public MessageDatabase(StreamUtil streamUtil)
+    public MessageDatabase(TopicResolver topicResolver)
     {
-        _streamUtil = streamUtil;
+        _topicResolver = topicResolver;
     }
 
     public void AddMessages<T>(string topic, params T[] messages) where T : class, ITopicMessage
@@ -27,12 +30,13 @@ public class MessageDatabase
 
         foreach (var message in messages)
         {
-            var context = new MessageContext<T>(_streamUtil, message, new TopicData(
+            var topicData = new TopicData(
                 // Expose message's own index in topic.
                 _messages[topic].Count.ToString(CultureInfo.InvariantCulture),
                 topic,
-                DateTime.UtcNow));
-            _messages[topic].Add(context);
+                DateTime.UtcNow);
+
+            _messages[topic].Add(_topicResolver.CreateMessageContext(topicData, message));
         }
     }
 
