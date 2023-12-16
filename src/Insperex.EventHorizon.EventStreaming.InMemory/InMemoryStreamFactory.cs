@@ -12,18 +12,15 @@ namespace Insperex.EventHorizon.EventStreaming.InMemory;
 
 public class InMemoryStreamFactory : IStreamFactory
 {
-    private readonly AttributeUtil _attributeUtil;
     private readonly IndexDatabase _indexDatabase;
     private readonly MessageDatabase _messageDatabase;
     private readonly ConsumerDatabase _consumerDatabase;
     private readonly FailureHandlerFactory _failureHandlerFactory;
     private readonly ILoggerFactory _loggerFactory;
 
-    public InMemoryStreamFactory(AttributeUtil attributeUtil, MessageDatabase messageDatabase,
-        IndexDatabase indexDatabase, ConsumerDatabase consumerDatabase, FailureHandlerFactory failureHandlerFactory,
-        ILoggerFactory loggerFactory)
+    public InMemoryStreamFactory(MessageDatabase messageDatabase, IndexDatabase indexDatabase,
+        ConsumerDatabase consumerDatabase, FailureHandlerFactory failureHandlerFactory, ILoggerFactory loggerFactory)
     {
-        _attributeUtil = attributeUtil;
         _messageDatabase = messageDatabase;
         _indexDatabase = indexDatabase;
         _consumerDatabase = consumerDatabase;
