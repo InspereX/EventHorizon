@@ -4,7 +4,6 @@ using System.Text.Json;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
-using Insperex.EventHorizon.EventStreaming.Util;
 
 namespace Insperex.EventHorizon.EventStreaming.Models;
 
