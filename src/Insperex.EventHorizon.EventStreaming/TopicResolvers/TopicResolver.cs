@@ -8,6 +8,7 @@ using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Util;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
 {
@@ -15,14 +16,16 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
     {
         private readonly ITopicResolver _topicResolver;
         private readonly AttributeUtil _attributeUtil;
+        private readonly ILogger<TopicResolver> _logger;
         private readonly Dictionary<(string, string), Type> _actions = new();
 
         public TopicResolver(
             ITopicResolver topicResolver,
-            AttributeUtil attributeUtil)
+            AttributeUtil attributeUtil, ILogger<TopicResolver> logger)
         {
             _topicResolver = topicResolver;
             _attributeUtil = attributeUtil;
+            _logger = logger;
 
             // Store Topic from States
             foreach (var state in AssemblyUtil.States)
@@ -72,6 +75,14 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
         public MessageContext<T> CreateMessageContext<T>(TopicData topicData, T message) where T : ITopicMessage
         {
             var type = _actions.GetValueOrDefault((topicData.Topic, message.Type));
+            if (type == null)
+            {
+                type = _actions.FirstOrDefault(x => topicData.Topic.Contains(x.Key.Item1) && x.Key.Item2 == message.Type).Value;
+            }
+
+            if (type == null)
+                throw new Exception("type Cannot be null");
+
             return new MessageContext<T>(type, message, topicData);
         }
 
@@ -82,7 +93,10 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
             if (topic == null) return;
 
             foreach (var type in types)
+            {
                 _actions[(topic, type.Name)] = type;
+                // _logger.LogInformation("Registered {Action} {Type} for topic {Topic}", typeof(T).Name, type.Name, topic);
+            }
         }
 
         private void AddActions<T>(Type[] types) where T : ITopicMessage
@@ -93,6 +107,7 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
                 if (topic == null) continue;
 
                 _actions[(topic, type.Name)] = type;
+                // _logger.LogInformation("Registered {Type} for topic {Topic}", type.Name, topic);
             }
         }
     }
