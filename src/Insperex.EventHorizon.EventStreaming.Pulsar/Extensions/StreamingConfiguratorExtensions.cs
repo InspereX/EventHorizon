@@ -21,8 +21,8 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar.Extensions
             // Add Admin and Factory
             configurator.Collection.Configure(onConfig);
             configurator.Collection.AddSingleton<PulsarClientResolver>();
-            configurator.Collection.AddSingleton(typeof(IStreamFactory), typeof(PulsarStreamFactory));
 
+            configurator.Collection.AddSingleton(typeof(IStreamFactory), typeof(PulsarStreamFactory));
             configurator.Collection.AddSingleton(typeof(ITopicAdmin<>), typeof(PulsarTopicAdmin<>));
             configurator.Collection.AddSingleton(typeof(ITopicResolver), typeof(PulsarTopicResolver));
 
