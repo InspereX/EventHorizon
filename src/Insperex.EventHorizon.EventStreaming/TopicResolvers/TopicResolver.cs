@@ -74,11 +74,12 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
 
         public MessageContext<T> CreateMessageContext<T>(TopicData topicData, T message) where T : ITopicMessage
         {
+            // Used for most types
             var type = _actions.GetValueOrDefault((topicData.Topic, message.Type));
+
+            // Used for Responses that add hostname to topic
             if (type == null)
-            {
-                type = _actions.FirstOrDefault(x => topicData.Topic.Contains(x.Key.Item1) && x.Key.Item2 == message.Type).Value;
-            }
+                type = _actions.FirstOrDefault(x => topicData.Topic.StartsWith(x.Key.Item1, StringComparison.InvariantCulture) && x.Key.Item2 == message.Type).Value;
 
             if (type == null)
                 throw new Exception("type Cannot be null");
