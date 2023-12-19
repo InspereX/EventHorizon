@@ -82,7 +82,7 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
                 type = _actions.FirstOrDefault(x => topicData.Topic.StartsWith(x.Key.Item1, StringComparison.InvariantCulture) && x.Key.Item2 == message.Type).Value;
 
             if (type == null)
-                throw new Exception("type Cannot be null");
+                throw new Exception("type cannot be null");
 
             return new MessageContext<T>(type, message, topicData);
         }
