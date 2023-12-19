@@ -33,11 +33,11 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
                 // Skip Views
                 if (streamAttribute.SourceType != null) continue;
 
-                // Add Actions
-                AddActions<Command>(AssemblyUtil.StateToCommandsLookup[state]);
-                AddActions<Request>(AssemblyUtil.StateToRequestsLookup[state]);
-                AddActions<Response>(AssemblyUtil.StateToResponsesLookup[state]);
-                AddActions<Event>(AssemblyUtil.StateToEventsLookup[state]);
+                // Add State Actions
+                AddStateActions<Command>(state, AssemblyUtil.StateToCommandsLookup[state]);
+                AddStateActions<Request>(state, AssemblyUtil.StateToRequestsLookup[state]);
+                AddStateActions<Response>(state, AssemblyUtil.StateToResponsesLookup[state]);
+                AddStateActions<Event>(state, AssemblyUtil.StateToEventsLookup[state]);
             }
 
             // Store Topic from Actions
@@ -73,6 +73,16 @@ namespace Insperex.EventHorizon.EventStreaming.TopicResolvers
         {
             var type = _actions.GetValueOrDefault((topicData.Topic, message.Type));
             return new MessageContext<T>(type, message, topicData);
+        }
+
+        private void AddStateActions<T>(Type state, Type[] types) where T : ITopicMessage
+        {
+            // States can have many topics
+            var topic = GetTopic<T>(state, false);
+            if (topic == null) return;
+
+            foreach (var type in types)
+                _actions[(topic, type.Name)] = type;
         }
 
         private void AddActions<T>(Type[] types) where T : ITopicMessage
