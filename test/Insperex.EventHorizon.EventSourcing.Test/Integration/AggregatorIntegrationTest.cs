@@ -160,7 +160,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
         var @event = new AccountOpened(100);
 
         // Act
-        var topic = _topicResolver.GetTopic<Command>(typeof(UserState), false);
+        var topic = _topicResolver.GetTopic<Event>(typeof(AccountState), false);
         var topicData = new TopicData("1", topic, DateTime.UtcNow);
         var res = await _accountAggregator.HandleAsync(_topicResolver.CreateMessageContext(topicData, new Event(streamId, 1, @event)), CancellationToken.None);
 
