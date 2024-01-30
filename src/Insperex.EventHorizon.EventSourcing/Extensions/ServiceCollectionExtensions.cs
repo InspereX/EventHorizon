@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
     {
         configurator.Collection.TryAddSingleton(typeof(EventSourcingClient<>));
         configurator.Collection.TryAddSingleton(typeof(AggregatorBuilder<,>));
+        configurator.Collection.TryAddSingleton(typeof(AggregateWorkflowBuilder<,>));
         configurator.Collection.TryAddSingleton<SenderBuilder>();
         configurator.Collection.TryAddSingleton<SenderSubscriptionTracker>();
         configurator.Collection.TryAddSingleton<ValidationUtil>();
