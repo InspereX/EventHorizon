@@ -10,7 +10,9 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventStore.Interfaces;
+using Insperex.EventHorizon.EventStore.Interfaces.Factory;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
+using Insperex.EventHorizon.EventStore.Models;
 using Insperex.EventHorizon.EventStreaming;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -21,15 +23,15 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow
         where TWrapper : class, IStateWrapper<T>, new()
         where T : class, IState
     {
-        private readonly ICrudStore<TWrapper> _crudStore;
+        private readonly ICrudStore<Snapshot<T>> _crudStore;
         private readonly Aggregator<TWrapper, T> _aggregator;
         private readonly StreamingClient _streamingClient;
-        private readonly AggregateWorkflowConfig<TWrapper, T> _config;
         private readonly ILogger<AggregateWorkflow<TWrapper, T>> _logger;
+        public AggregateWorkflowConfig<TWrapper, T> Config { get; }
 
         public AggregateWorkflow(IServiceProvider serviceProvider, AggregateWorkflowConfig<TWrapper, T> config)
         {
-            _crudStore = serviceProvider.GetRequiredService<ICrudStore<TWrapper>>();
+            _crudStore = serviceProvider.GetRequiredService<ISnapshotStoreFactory<T>>().GetSnapshotStore();
             _streamingClient = serviceProvider.GetRequiredService<StreamingClient>();
             _logger = serviceProvider.GetRequiredService<ILogger<AggregateWorkflow<TWrapper, T>>>();
 
@@ -37,10 +39,8 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow
             var aggregatorBuilder = serviceProvider.GetRequiredService<AggregatorBuilder<TWrapper, T>>();
             _aggregator = aggregatorBuilder.Build();
 
-            _config = config;
+            Config = config;
         }
-
-        public AggregateWorkflowConfig<TWrapper, T> Config => _config;
 
         public async Task RebuildAllAsync(CancellationToken ct)
         {
@@ -53,28 +53,19 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow
 
             while (!ct.IsCancellationRequested)
             {
-                var events = await reader.GetNextAsync(1000);
-                if (!events.Any()) break;
+                var messages = await reader.GetNextAsync(1000);
+                if (!messages.Any()) break;
 
-                var lookup = events.ToLookup(x => x.Data.StreamId);
-                var streamIds = lookup.Select(x => x.Key).ToArray();
-                var models = await _crudStore.GetAllAsync(streamIds, ct);
-                var modelsDict = models.ToDictionary(x => x.Id);
-                var dict = new Dictionary<string, Aggregate<T>>();
-                foreach (var streamId in streamIds)
-                {
-                    var agg = modelsDict.ContainsKey(streamId)
-                        ? new Aggregate<T>(modelsDict[streamId])
-                        : new Aggregate<T>(streamId);
+                // Load Aggregates
+                var streamIds = messages.Select(x => x.Data.StreamId).Distinct().ToArray();
+                var aggDict = await _aggregator.GetAggregatesFromStatesAsync(streamIds, ct);
 
-                    foreach (var message in lookup[streamId])
-                        agg.Apply(message.Data);
+                // Apply Events
+                foreach (var message in messages)
+                    aggDict[message.Data.StreamId].Apply(message.Data);
 
-                    dict[agg.Id] = agg;
-                }
-
-                if(! dict.Any()) return;
-                await _aggregator.SaveAllAsync(dict);
+                // Save Changes
+                await _aggregator.SaveAllAsync(aggDict);
             }
         }
 
@@ -109,7 +100,7 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow
             var aggregateDict = await _aggregator.GetAggregatesFromStatesAsync(streamIds, ct);
 
             // OnLoad Hook
-            SafeHook(() => _config.Middleware.OnLoad(aggregateDict), aggregateDict);
+            SafeHook(() => Config.Middleware.OnLoad(aggregateDict), aggregateDict);
 
             return aggregateDict;
         }
@@ -144,13 +135,13 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow
         private async Task SaveAsync(Dictionary<string, Aggregate<T>> aggregateDict)
         {
             // AfterSave Hook
-            SafeHook(() => _config.Middleware.BeforeSave(aggregateDict), aggregateDict);
+            SafeHook(() => Config.Middleware.BeforeSave(aggregateDict), aggregateDict);
 
             // Save Successful Aggregates and Events
             await _aggregator.SaveAllAsync(aggregateDict);
 
             // AfterSave Hook
-            SafeHook(() => _config.Middleware.AfterSave(aggregateDict), aggregateDict);
+            SafeHook(() => Config.Middleware.AfterSave(aggregateDict), aggregateDict);
         }
 
         private static void SafeHook(Action action, Dictionary<string, Aggregate<T>> aggregateDict)
