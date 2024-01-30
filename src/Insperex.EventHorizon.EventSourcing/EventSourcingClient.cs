@@ -1,7 +1,9 @@
 ﻿using System;
 using Insperex.EventHorizon.Abstractions.Interfaces;
+using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
+using Insperex.EventHorizon.EventSourcing.AggregateWorkflow;
 using Insperex.EventHorizon.EventSourcing.Senders;
 using Insperex.EventHorizon.EventStore.Interfaces.Factory;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
@@ -26,7 +28,8 @@ public class EventSourcingClient<T> where T : class, IState, new()
     }
 
     public SenderBuilder CreateSender() => _senderBuilder;
-    public AggregateBuilder<Snapshot<T>, T> Aggregator() => _serviceProvider.GetRequiredService<AggregateBuilder<Snapshot<T>, T>>();
+    public AggregateWorkflowBuilder<Snapshot<T>, T> AggregateWorkflow() => _serviceProvider.GetRequiredService<AggregateWorkflowBuilder<Snapshot<T>, T>>();
+    public AggregatorBuilder<Snapshot<T>, T> Aggregator() => _serviceProvider.GetRequiredService<AggregatorBuilder<Snapshot<T>, T>>();
     public ICrudStore<Snapshot<T>> GetSnapshotStore() => _serviceProvider.GetRequiredService<ISnapshotStoreFactory<T>>().GetSnapshotStore();
     public ICrudStore<View<T>> GetViewStore() => _serviceProvider.GetRequiredService<IViewStoreFactory<T>>().GetViewStore();
 }

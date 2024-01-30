@@ -4,7 +4,7 @@ using Insperex.EventHorizon.EventStore.Interfaces;
 
 namespace Insperex.EventHorizon.EventStore.Models;
 
-public class View<T> : IStateParent<T>
+public class View<T> : IStateWrapper<T>
     where T : class, IState
 {
     public View()

@@ -40,7 +40,7 @@ public class Aggregate<T>
         Setup();
     }
 
-    public Aggregate(IStateParent<T> model)
+    public Aggregate(IStateWrapper<T> model)
     {
         Id = model.Id;
         SequenceId = model.SequenceId;

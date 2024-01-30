@@ -25,7 +25,7 @@ public class ValidationUtil
     }
 
     public void Validate<T, TS>()
-        where T : class, IStateParent<TS>
+        where T : class, IStateWrapper<TS>
         where TS : class, IState
     {
         if(typeof(T) == typeof(Snapshot<TS>))
