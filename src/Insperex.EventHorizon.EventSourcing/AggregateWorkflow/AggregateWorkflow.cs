@@ -100,7 +100,7 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow
             var aggregateDict = await _aggregator.GetAggregatesFromStatesAsync(streamIds, ct);
 
             // OnLoad Hook
-            SafeHook(() => Config.Middleware.OnLoad(aggregateDict), aggregateDict);
+            SafeHook(() => Config.Middleware?.OnLoad(aggregateDict), aggregateDict);
 
             return aggregateDict;
         }
@@ -135,13 +135,13 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow
         private async Task SaveAsync(Dictionary<string, Aggregate<T>> aggregateDict)
         {
             // AfterSave Hook
-            SafeHook(() => Config.Middleware.BeforeSave(aggregateDict), aggregateDict);
+            SafeHook(() => Config.Middleware?.BeforeSave(aggregateDict), aggregateDict);
 
             // Save Successful Aggregates and Events
             await _aggregator.SaveAllAsync(aggregateDict);
 
             // AfterSave Hook
-            SafeHook(() => Config.Middleware.AfterSave(aggregateDict), aggregateDict);
+            SafeHook(() => Config.Middleware?.AfterSave(aggregateDict), aggregateDict);
         }
 
         private static void SafeHook(Action action, Dictionary<string, Aggregate<T>> aggregateDict)
