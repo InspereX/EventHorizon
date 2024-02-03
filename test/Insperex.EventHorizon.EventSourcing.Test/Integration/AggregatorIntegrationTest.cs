@@ -41,7 +41,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     private readonly Aggregator<Snapshot<Account>, Account> _accountAggregator;
     private readonly Aggregator<Snapshot<User>, User> _userAggregator;
     private readonly EventSourcingClient<Account> _eventSourcingClient;
-    private readonly AggregateWorkflow<Snapshot<Account>, Account> _userWorkflow;
+    private readonly AggregateWorkflow<Snapshot<User>, User> _userWorkflow;
     private readonly AggregateWorkflow<Snapshot<Account>, Account> _accountWorkflow;
 
     public AggregatorIntegrationTest(ITestOutputHelper output)
