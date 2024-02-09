@@ -37,11 +37,6 @@ public class AggregatorBuilder<TWrapper, T>
         _logger = _loggerFactory.CreateLogger<AggregatorBuilder<TWrapper, T>>();
     }
 
-    public void UseStore<TStore>() where TStore : ICrudStore<Snapshot<T>>
-    {
-
-    }
-
     public Aggregator<TWrapper, T> Build()
     {
         // Create Store
