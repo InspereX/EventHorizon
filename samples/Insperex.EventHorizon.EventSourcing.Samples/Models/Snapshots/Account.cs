@@ -1,11 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Net;
+﻿using System.Net;
 using Insperex.EventHorizon.Abstractions.Attributes;
 using Insperex.EventHorizon.Abstractions.Interfaces;
-using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Handlers;
 using Insperex.EventHorizon.Abstractions.Models;
-using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Actions;
 using Insperex.EventHorizon.EventStore.MongoDb.Attributes;
 using Insperex.EventHorizon.EventStore.MongoDb.Models;
