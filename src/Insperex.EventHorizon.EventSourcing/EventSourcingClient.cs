@@ -1,20 +1,16 @@
 ﻿using System;
 using Insperex.EventHorizon.Abstractions.Interfaces;
-using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
-using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.AggregateWorkflow;
 using Insperex.EventHorizon.EventSourcing.Senders;
 using Insperex.EventHorizon.EventStore.Interfaces.Factory;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStore.Models;
-using Insperex.EventHorizon.EventStreaming.Readers;
-using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Insperex.EventHorizon.EventSourcing;
 
-public class EventSourcingClient<T> where T : class, IState, new()
+public class EventSourcingClient
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly SenderBuilder _senderBuilder;
@@ -28,8 +24,16 @@ public class EventSourcingClient<T> where T : class, IState, new()
     }
 
     public SenderBuilder CreateSender() => _senderBuilder;
-    public AggregateWorkflowBuilder<Snapshot<T>, T> AggregateWorkflow() => _serviceProvider.GetRequiredService<AggregateWorkflowBuilder<Snapshot<T>, T>>();
-    public AggregatorBuilder<Snapshot<T>, T> Aggregator() => _serviceProvider.GetRequiredService<AggregatorBuilder<Snapshot<T>, T>>();
-    public ICrudStore<Snapshot<T>> GetSnapshotStore() => _serviceProvider.GetRequiredService<ISnapshotStoreFactory<T>>().GetSnapshotStore();
-    public ICrudStore<View<T>> GetViewStore() => _serviceProvider.GetRequiredService<IViewStoreFactory<T>>().GetViewStore();
+    public AggregateWorkflowFactory<TState> AggregateWorkflow<TState>()
+        where TState : class, IState, new()
+        => _serviceProvider.GetRequiredService<AggregateWorkflowFactory<TState>>();
+    public AggregatorBuilder<Snapshot<TState>, TState> Aggregator<TState>()
+        where TState : class, IState, new()
+        => _serviceProvider.GetRequiredService<AggregatorBuilder<Snapshot<TState>, TState>>();
+    public ICrudStore<Snapshot<TState>> GetSnapshotStore<TState>()
+        where TState : class, IState, new()
+        => _serviceProvider.GetRequiredService<ISnapshotStoreFactory<TState>>().GetSnapshotStore();
+    public ICrudStore<View<TState>> GetViewStore<TState>()
+        where TState : class, IState, new() =>
+        _serviceProvider.GetRequiredService<IViewStoreFactory<TState>>().GetViewStore();
 }

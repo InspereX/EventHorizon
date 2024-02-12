@@ -84,7 +84,6 @@ public class Aggregator<TParent, T>
             {
                 aggregateDict[id].SetStatus(aggregateDict[id].SequenceId == 1?
                     HttpStatusCode.Created : HttpStatusCode.OK);
-                aggregateDict[id].SequenceId++;
             }
             _logger.LogInformation("Saved {Count} {Type} Aggregate(s) in {Duration}",
                 aggregateDict.Count, typeof(T).Name, sw.ElapsedMilliseconds);
@@ -154,6 +153,14 @@ public class Aggregator<TParent, T>
             aggregate.Responses.Clear();
             aggregate.SetStatus(HttpStatusCode.OK);
         }
+    }
+
+    public async Task DeleteAllAsync(CancellationToken ct)
+    {
+        await _crudStore.DropDatabaseAsync(ct);
+        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(T), ct: ct);
+        await _streamingClient.GetAdmin<Request>().DeleteTopicAsync(typeof(T), ct: ct);
+        await _streamingClient.GetAdmin<Command>().DeleteTopicAsync(typeof(T), ct: ct);
     }
 
     #endregion

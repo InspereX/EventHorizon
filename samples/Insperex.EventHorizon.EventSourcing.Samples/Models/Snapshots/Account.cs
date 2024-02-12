@@ -24,6 +24,7 @@ public class Account : IState,
     IHandleRequest<OpenAccount, AccountResponse>,
     IHandleRequest<Withdrawal, AccountResponse>,
     IHandleRequest<Deposit, AccountResponse>,
+    IHandleEvent<AccountOpened>,
     IApplyEvent<AccountOpened>,
     IApplyEvent<AccountDebited>,
     IApplyEvent<AccountCredited>
@@ -60,6 +61,8 @@ public class Account : IState,
         context.AddEvent(new AccountCredited(request.Amount));
         return new AccountResponse();
     }
+
+    public void Handle(AccountOpened @event, AggregateContext context) => context.AddEvent(@event);
 
     #endregion
 

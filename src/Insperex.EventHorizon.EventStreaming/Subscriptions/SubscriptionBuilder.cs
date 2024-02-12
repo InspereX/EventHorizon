@@ -20,6 +20,7 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
     private readonly List<string> _topics;
     private int? _batchSize = 1000;
     private bool? _isBeginning = true;
+    private bool _stopAtEnd;
     private TimeSpan _noBatchDelay = TimeSpan.FromMilliseconds(10);
     private DateTime? _startDateTime;
     private string _subscriptionName = AssemblyUtil.AssemblyName;
@@ -84,6 +85,12 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
         return this;
     }
 
+    public SubscriptionBuilder<T> StopAtEnd(bool stopAtEnd)
+    {
+        _stopAtEnd = stopAtEnd;
+        return this;
+    }
+
     public SubscriptionBuilder<T> IsBeginning(bool isBeginning)
     {
         _isBeginning = isBeginning;
@@ -134,6 +141,7 @@ public class SubscriptionBuilder<T> where T : class, ITopicMessage, new()
             StartDateTime = _startDateTime,
             IsBeginning = _isBeginning,
             IsPreload = _isPreload,
+            StopAtEnd = _stopAtEnd,
             RedeliverFailedMessages = _redeliverFailedMessages,
             IsMessageOrderGuaranteedOnFailure = _guaranteeMessageOrderOnFailure,
             BackoffStrategy = _backoffStrategy,

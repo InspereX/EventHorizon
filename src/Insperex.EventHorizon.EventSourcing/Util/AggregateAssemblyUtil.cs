@@ -14,7 +14,8 @@ public static class AggregateAssemblyUtil
 {
     public static readonly ImmutableDictionary<string, Dictionary<string, MethodInfo>> StateToCommandHandlersDict = GetStateActionHandlerDict(typeof(IHandleCommand<>), "Handle");
     public static readonly ImmutableDictionary<string, Dictionary<string, MethodInfo>> StateToRequestHandlersDict = GetStateActionHandlerDict(typeof(IHandleRequest<,>), "Handle");
-    public static readonly ImmutableDictionary<string, Dictionary<string, MethodInfo>> StateToEventHandlersDict = GetStateActionHandlerDict(typeof(IApplyEvent<>), "Apply");
+    public static readonly ImmutableDictionary<string, Dictionary<string, MethodInfo>> StateToEventHandlersDict = GetStateActionHandlerDict(typeof(IHandleEvent<>), "Handle");
+    public static readonly ImmutableDictionary<string, Dictionary<string, MethodInfo>> StateToEventAppliersDict = GetStateActionHandlerDict(typeof(IApplyEvent<>), "Apply");
 
     public static readonly IDictionary<string, Type[]> StateToCommandsLookup = GetStatesToActionLookup(typeof(ICommand<>));
     public static readonly IDictionary<string, Type[]> StateToRequestsLookup = GetStatesToActionLookup(typeof(IRequest<,>));

@@ -90,7 +90,7 @@ public class ValidationUtil
         }
         else if (typeof(TM) == typeof(Event))
         {
-            stateHandlerLookup = AggregateAssemblyUtil.StateToEventHandlersDict;
+            stateHandlerLookup = AggregateAssemblyUtil.StateToEventAppliersDict;
             stateActionLookup = AggregateAssemblyUtil.StateToEventsLookup;
             getErrorMessage = type => $"IApplyEvent<{type.Name}>";
         }
