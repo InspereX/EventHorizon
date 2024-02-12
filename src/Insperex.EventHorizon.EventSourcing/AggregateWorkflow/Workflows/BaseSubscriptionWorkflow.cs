@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -6,9 +5,7 @@ using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
-using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflow.Workflows
 {
