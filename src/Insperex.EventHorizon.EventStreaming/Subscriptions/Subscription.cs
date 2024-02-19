@@ -78,6 +78,8 @@ public class Subscription<T> : IAsyncDisposable where T : class, ITopicMessage, 
                 var batch = await GetNextBatch();
                 if (batch?.Any() == true)
                     await ProcessBatch(batch);
+                else if (_config.StopAtEnd)
+                    _running = false;
                 else
                     await Task.Delay(_config.NoBatchDelay);
             }

@@ -3,7 +3,7 @@ using Insperex.EventHorizon.EventStore.Interfaces;
 
 namespace Insperex.EventHorizon.EventStore.Models;
 
-public class Snapshot<T> : IStateParent<T>
+public class Snapshot<T> : IStateWrapper<T>
 {
     public Snapshot()
     {

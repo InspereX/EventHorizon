@@ -1,11 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Net;
+﻿using System.Net;
 using Insperex.EventHorizon.Abstractions.Attributes;
 using Insperex.EventHorizon.Abstractions.Interfaces;
-using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Handlers;
 using Insperex.EventHorizon.Abstractions.Models;
-using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Actions;
 using Insperex.EventHorizon.EventStore.MongoDb.Attributes;
 using Insperex.EventHorizon.EventStore.MongoDb.Models;
@@ -24,6 +21,7 @@ public class Account : IState,
     IHandleRequest<OpenAccount, AccountResponse>,
     IHandleRequest<Withdrawal, AccountResponse>,
     IHandleRequest<Deposit, AccountResponse>,
+    IHandleEvent<AccountOpened>,
     IApplyEvent<AccountOpened>,
     IApplyEvent<AccountDebited>,
     IApplyEvent<AccountCredited>
@@ -60,6 +58,8 @@ public class Account : IState,
         context.AddEvent(new AccountCredited(request.Amount));
         return new AccountResponse();
     }
+
+    public void Handle(AccountOpened @event, AggregateContext context) => context.AddEvent(@event);
 
     #endregion
 

@@ -15,6 +15,7 @@ using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStore.Models;
 using Microsoft.Extensions.Logging;
+using ExistsRequest = Elastic.Clients.Elasticsearch.IndexManagement.ExistsRequest;
 
 namespace Insperex.EventHorizon.EventStore.ElasticSearch;
 
@@ -36,8 +37,8 @@ public class ElasticCrudStore<TE> : ICrudStore<TE>
 
     public async Task SetupAsync(CancellationToken ct)
     {
-        var getReq = await _client.Indices.GetAsync(new GetIndexRequest(_dbName), ct);
-        if (getReq.IsValidResponse) return;
+        var getReq = await _client.Indices.ExistsAsync(new ExistsRequest(_dbName), ct);
+        if (getReq.Exists) return;
 
         var createReq = await _client.Indices.CreateAsync(_dbName, cfg =>
         {

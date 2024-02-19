@@ -40,7 +40,7 @@ public class Aggregate<T>
         Setup();
     }
 
-    public Aggregate(IStateParent<T> model)
+    public Aggregate(IStateWrapper<T> model)
     {
         Id = model.Id;
         SequenceId = model.SequenceId;
@@ -94,6 +94,20 @@ public class Aggregate<T>
         }
     }
 
+    public void Handle(Event @event)
+    {
+        // Try Self
+        var payload = @event.GetPayload();
+        foreach (var state in AllStates)
+        {
+            var context = new AggregateContext(Exists());
+            var method = AggregateAssemblyUtil.StateToEventHandlersDict.GetValueOrDefault(state.Key)?.GetValueOrDefault(@event.Type);
+            method?.Invoke(state.Value, parameters: new [] { payload, context } );
+            foreach(var item in context.Events)
+                Apply(new Event(Id, SequenceId, item));
+        }
+    }
+
     public void Apply(IEvent<T> @event)
     {
         Apply(new Event(Id, ++SequenceId, @event));
@@ -105,7 +119,7 @@ public class Aggregate<T>
         var payload = @event.GetPayload();
         foreach (var state in AllStates)
         {
-            var method = AggregateAssemblyUtil.StateToEventHandlersDict.GetValueOrDefault(state.Key)?.GetValueOrDefault(@event.Type);
+            var method = AggregateAssemblyUtil.StateToEventAppliersDict.GetValueOrDefault(state.Key)?.GetValueOrDefault(@event.Type);
             method?.Invoke(state.Value, parameters: new [] { payload } );
         }
 
@@ -117,7 +131,7 @@ public class Aggregate<T>
         }
         else
         {
-            SequenceId = @event.SequenceId;
+            ++SequenceId;
         }
 
         IsDirty = true;

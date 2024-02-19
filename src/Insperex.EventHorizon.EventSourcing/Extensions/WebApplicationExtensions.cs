@@ -33,8 +33,8 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions
             var type = typeof(T);
 
             // Map Get
-            var esClient = endpointRouteBuilder.ServiceProvider.GetRequiredService<EventSourcingClient<T>>();
-            var aggregator = esClient.Aggregator().Build();
+            var esClient = endpointRouteBuilder.ServiceProvider.GetRequiredService<EventSourcingClient>();
+            var aggregator = esClient.Aggregator<T>().Build();
             var group = endpointRouteBuilder.MapGroup("api");
 
             group.MapGet(type.Name + "/{id}", async (string id) =>
@@ -100,7 +100,7 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions
             where TReq : IRequest<T, TRes>
             where TRes : class, IResponse<T>
         {
-            var esClient = endpointRouteBuilder.ServiceProvider.GetRequiredService<EventSourcingClient<T>>();
+            var esClient = endpointRouteBuilder.ServiceProvider.GetRequiredService<EventSourcingClient>();
             var sender = esClient.CreateSender().Build();
             var typeName = typeof(T).Name;
             var reqName = typeof(TReq).Name;
@@ -130,7 +130,7 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions
             where T : class, IState, new()
             where TCmd : ICommand<T>
         {
-            var sender = endpointRouteBuilder.ServiceProvider.GetRequiredService<EventSourcingClient<T>>().CreateSender().Build();
+            var sender = endpointRouteBuilder.ServiceProvider.GetRequiredService<EventSourcingClient>().CreateSender().Build();
 
             var typeName = typeof(T).Name;
             var reqName = typeof(TCmd).Name;

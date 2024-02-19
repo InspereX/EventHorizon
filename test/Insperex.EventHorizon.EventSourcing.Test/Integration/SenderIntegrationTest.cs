@@ -26,6 +26,7 @@ using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
+using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,9 +45,10 @@ public class SenderIntegrationTest : IAsyncLifetime
     private readonly Sender _sender;
     private Stopwatch _stopwatch;
     private readonly Sender _sender2;
-    private readonly EventSourcingClient<Account> _eventSourcingClient;
+    private readonly EventSourcingClient _eventSourcingClient;
     private readonly StreamingClient _streamingClient;
     private readonly IHost _consumerHost;
+    private readonly Aggregator<Snapshot<Account>, Account> _aggregator;
 
     public SenderIntegrationTest(ITestOutputHelper output)
     {
@@ -83,7 +85,9 @@ public class SenderIntegrationTest : IAsyncLifetime
                     x.AddEventSourcing()
 
                         // Hosts
-                        .ApplyRequestsToSnapshot<Account>(a => a.BatchSize(10000))
+                        .AddWorkflow<Account>(w =>
+                            w.HandleRequestsApplyEvents(h =>
+                                h.Subscription(s => s.BatchSize(10000))))
 
                         // Stores
                         .AddInMemoryViewStore()
@@ -111,8 +115,9 @@ public class SenderIntegrationTest : IAsyncLifetime
             .GetErrorResult((req, status, error) => new AccountResponse(status, error))
             .Build();
 
-        _eventSourcingClient = _senderHost.Services.GetRequiredService<EventSourcingClient<Account>>();
+        _eventSourcingClient = _senderHost.Services.GetRequiredService<EventSourcingClient>();
         _streamingClient = _senderHost.Services.GetRequiredService<StreamingClient>();
+        _aggregator = _eventSourcingClient.Aggregator<Account>().Build();
     }
 
     public async Task InitializeAsync()
@@ -125,9 +130,7 @@ public class SenderIntegrationTest : IAsyncLifetime
     public async Task DisposeAsync()
     {
         _output.WriteLine($"Test Ran in {_stopwatch.ElapsedMilliseconds}ms");
-        await _eventSourcingClient.GetSnapshotStore().DropDatabaseAsync(CancellationToken.None);
-        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(typeof(Account));
-        await _streamingClient.GetAdmin<Request>().DeleteTopicAsync(typeof(Account));
+        await _aggregator.DeleteAllAsync(CancellationToken.None);
         await _senderHost.StopAsync();
         await _consumerHost.StopAsync();
         _senderHost.Dispose();
@@ -153,8 +156,8 @@ public class SenderIntegrationTest : IAsyncLifetime
         Assert.True(HttpStatusCode.OK == (await result5).StatusCode, (await result5).Error);
 
         // Assert Account
-        var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
-        var events = await _eventSourcingClient.Aggregator().Build().GetEventsAsync(new[] { streamId });
+        var aggregate  = await _eventSourcingClient.GetSnapshotStore<Account>().GetAsync(streamId, CancellationToken.None);
+        var events = await _eventSourcingClient.Aggregator<Account>().Build().GetEventsAsync(new[] { streamId });
         Assert.Equal(streamId, aggregate.State.Id);
         Assert.Equal(streamId, aggregate.Id);
         Assert.NotEqual(DateTime.MinValue, aggregate.CreatedDate);

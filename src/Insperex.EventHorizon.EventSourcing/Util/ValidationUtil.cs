@@ -25,7 +25,7 @@ public class ValidationUtil
     }
 
     public void Validate<T, TS>()
-        where T : class, IStateParent<TS>
+        where T : class, IStateWrapper<TS>
         where TS : class, IState
     {
         if(typeof(T) == typeof(Snapshot<TS>))
@@ -90,7 +90,7 @@ public class ValidationUtil
         }
         else if (typeof(TM) == typeof(Event))
         {
-            stateHandlerLookup = AggregateAssemblyUtil.StateToEventHandlersDict;
+            stateHandlerLookup = AggregateAssemblyUtil.StateToEventAppliersDict;
             stateActionLookup = AggregateAssemblyUtil.StateToEventsLookup;
             getErrorMessage = type => $"IApplyEvent<{type.Name}>";
         }
