@@ -3,7 +3,6 @@ using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.EventStore;
 using Insperex.EventHorizon.EventStreaming;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualBasic;
 
 namespace Insperex.EventHorizon.EventSourcing
 {

@@ -1,8 +1,6 @@
 using System;
 using Insperex.EventHorizon.Abstractions.Interfaces;
-using Insperex.EventHorizon.EventSourcing;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
-using Insperex.EventHorizon.EventStore.MongoDb.Models;
 using Insperex.EventHorizon.EventStore.MongoDb.Stores;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,7 +8,7 @@ namespace Insperex.EventHorizon.EventStore.MongoDb.Extensions
 {
     public static class StoreConfiguratorExtensions
     {
-        public static EventSourcingConfigurator<TState> UseMongoForStores<TState>(this EventSourcingConfigurator<TState> configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
+        public static StoreConfigurator<TState> UseMongoForStores<TState>(this StoreConfigurator<TState> configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
             where TState : class, IState
         {
             configurator.UseMongoSnapshotStore(onConfig);
@@ -19,7 +17,7 @@ namespace Insperex.EventHorizon.EventStore.MongoDb.Extensions
             return configurator;
         }
 
-        public static EventSourcingConfigurator<TState> UseMongoSnapshotStore<TState>(this EventSourcingConfigurator<TState>configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
+        public static StoreConfigurator<TState> UseMongoSnapshotStore<TState>(this StoreConfigurator<TState>configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
             where TState : class, IState
         {
             ConfigureConfigurator(configurator, "Snapshot", onConfig);
@@ -27,7 +25,7 @@ namespace Insperex.EventHorizon.EventStore.MongoDb.Extensions
             return configurator;
         }
 
-        public static EventSourcingConfigurator<TState> UseMongoLockStore<TState>(this EventSourcingConfigurator<TState> configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
+        public static StoreConfigurator<TState> UseMongoLockStore<TState>(this StoreConfigurator<TState> configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
             where TState : class, IState
         {
             ConfigureConfigurator(configurator, "Lock", onConfig);
@@ -35,7 +33,7 @@ namespace Insperex.EventHorizon.EventStore.MongoDb.Extensions
             return configurator;
         }
 
-        public static EventSourcingConfigurator<TState> UseMongoViewStore<TState>(this EventSourcingConfigurator<TState> configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
+        public static StoreConfigurator<TState> UseMongoViewStore<TState>(this StoreConfigurator<TState> configurator, Action<MongoCollectionConfigurator<TState>> onConfig = null)
             where TState : class, IState
         {
             ConfigureConfigurator(configurator, "View", onConfig);
@@ -43,7 +41,7 @@ namespace Insperex.EventHorizon.EventStore.MongoDb.Extensions
             return configurator;
         }
 
-        private static void ConfigureConfigurator<TState>(EventSourcingConfigurator<TState> configurator, string name, Action<MongoCollectionConfigurator<TState>> onConfig = null) where TState : class, IState
+        private static void ConfigureConfigurator<TState>(StoreConfigurator<TState> configurator, string name, Action<MongoCollectionConfigurator<TState>> onConfig = null) where TState : class, IState
         {
             configurator.Collection.AddSingleton(x =>
             {

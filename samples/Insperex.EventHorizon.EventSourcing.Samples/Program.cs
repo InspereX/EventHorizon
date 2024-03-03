@@ -54,11 +54,11 @@ public class Program
 
                                 // Add EventSourcing
                                 .AddAggregator<Account>(e =>
-                                    e.UseMongoForStores(s => s.WithDatabase("account"))
+                                    e.WithStoreConfig(sc => sc.UseMongoForStores())
                                         .WithStreamConfig(s => s
-                                            .WithPulsarStream<Event, Account>(p => p.WithTopic("persistent://account/account/event"))
-                                            .WithPulsarStream<Request, Account>(p => p.WithTopic("persistent://account/account/request"))
-                                            .WithPulsarStream<Command, Account>(p => p.WithTopic("persistent://account/account/command"))
+                                            .WithPulsarStream<Event, Account>()
+                                            .WithPulsarStream<Request, Account>()
+                                            .WithPulsarStream<Command, Account>()
                                         )
                                 )
 

@@ -11,7 +11,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Insperex.EventHorizon.EventSourcing\Insperex.EventHorizon.EventSourcing.csproj" />
         <ProjectReference Include="..\Insperex.EventHorizon.EventStore\Insperex.EventHorizon.EventStore.csproj" />
     </ItemGroup>
 
