@@ -15,23 +15,11 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static EventHorizonConfigurator AddEventSourcing(this EventHorizonConfigurator configurator)
-    {
-        configurator.Collection.TryAddSingleton(typeof(EventSourcingClient<>));
-        configurator.Collection.TryAddSingleton(typeof(AggregateBuilder<,>));
-        configurator.Collection.TryAddSingleton<SenderBuilder>();
-        configurator.Collection.TryAddSingleton<SenderSubscriptionTracker>();
-        configurator.Collection.TryAddSingleton<ValidationUtil>();
-
-        return configurator;
-    }
-
     public static EventHorizonConfigurator ApplyRequestsToSnapshot<T>(this EventHorizonConfigurator configurator,
         Action<AggregateBuilder<Snapshot<T>, T>> onBuild = null,
         Func<SubscriptionBuilder<Request>, SubscriptionBuilder<Request>> onBuildSubscription = null)
         where T : class, IState
     {
-        configurator.AddEventSourcing();
         configurator.Collection.AddHostedService(x =>
         {
             var streamingClient = x.GetRequiredService<StreamingClient<Request>>();
@@ -49,7 +37,6 @@ public static class ServiceCollectionExtensions
         Func<SubscriptionBuilder<Command>, SubscriptionBuilder<Command>> onBuildSubscription = null)
         where T : class, IState
     {
-        configurator.AddEventSourcing();
         configurator.Collection.AddHostedService(x =>
         {
             var streamingClient = x.GetRequiredService<StreamingClient<Command>>();
@@ -67,7 +54,6 @@ public static class ServiceCollectionExtensions
         Func<SubscriptionBuilder<Event>, SubscriptionBuilder<Event>> onBuildSubscription = null)
         where T : class, IState
     {
-        configurator.AddEventSourcing();
         configurator.Collection.AddHostedService(x =>
         {
             var streamingClient = x.GetRequiredService<StreamingClient<Event>>();
@@ -87,8 +73,6 @@ public static class ServiceCollectionExtensions
         where TSource : class, IState, new()
         where TTarget : class, IState, new()
     {
-        configurator.AddEventSourcing();
-
         configurator.Collection.AddHostedService(x =>
         {
             var streamingClient = x.GetRequiredService<StreamingClient<Event>>();

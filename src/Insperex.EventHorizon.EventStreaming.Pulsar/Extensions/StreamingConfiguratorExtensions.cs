@@ -13,8 +13,8 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar.Extensions
             where TPayload : IPayload
         {
             // Add Admin and Factory
-            configurator.Collection.AddSingleton(typeof(ITopicAdmin<>), typeof(PulsarTopicAdmin<>));
-            configurator.Collection.AddSingleton(typeof(IStreamFactory<>), typeof(PulsarStreamFactory<>));
+            configurator.Collection.AddSingleton(typeof(ITopicAdmin<TMessage>), typeof(PulsarTopicAdmin<TMessage>));
+            configurator.Collection.AddSingleton(typeof(IStreamFactory<TMessage>), typeof(PulsarStreamFactory<TMessage>));
             return configurator;
         }
     }

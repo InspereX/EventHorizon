@@ -46,27 +46,25 @@ public class Program
                         services.AddScoped<SearchAccountViewMiddleware>();
                         services.AddEventHorizon(x =>
                         {
-                            x.AddEventSourcing()
-
-                                // Add Clients
-                                .AddPulsarClient(context.Configuration.GetSection("Pulsar").Bind)
+                            // Add Clients
+                            x.AddPulsarClient(context.Configuration.GetSection("Pulsar").Bind)
                                 .AddMongoDbClient(context.Configuration.GetSection("MongoDb").Bind)
                                 .AddElasticClient(context.Configuration.GetSection("ElasticSearch").Bind)
+                                .AddInMemoryClient()
 
                                 // Add EventSourcing
-                                .AddEventSourcing(s =>
+                                .AddEventSourcing<Account>(s =>
                                     s.WithStreamConfig(sc => sc
-                                        .WithPulsarStream<Event, Account>()
-                                        .WithPulsarStream<Request, Account>()
-                                        .WithPulsarStream<Command, Account>()
-                                    )
-                                    .WithStoreConfig(sc =>
-                                    {
-                                        s.UseMongoDbSnapshotStore<Account>();
-                                        s.UseInMemoryViewStore<Account>();
-                                    })
+                                            .WithPulsarStream<Event, Account>()
+                                            .WithPulsarStream<Request, Account>()
+                                            .WithPulsarStream<Command, Account>()
+                                        )
+                                        .WithStoreConfig(sc =>
+                                        {
+                                            sc.UseMongoDbSnapshotStore();
+                                            sc.UseInMemoryViewStore();
+                                        })
                                 )
-
 
 
                                 // Hosted

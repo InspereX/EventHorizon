@@ -1,9 +1,10 @@
+using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.EventStore.Locks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Insperex.EventHorizon.EventStore
 {
-    public class StoreConfigurator
+    public class StoreConfigurator<TState> where TState : class, IState
     {
         public IServiceCollection Collection { get; set; }
 
@@ -12,7 +13,7 @@ namespace Insperex.EventHorizon.EventStore
             Collection = collection;
 
             // Common
-            collection.AddSingleton(typeof(LockFactory<>));
+            collection.AddSingleton<LockFactory<TState>>();
         }
     }
 }

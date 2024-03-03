@@ -8,7 +8,8 @@ namespace Insperex.EventHorizon.EventStore.InMemory.Extensions
 {
     public static class StoreConfiguratorExtensions
     {
-        public static StoreConfigurator UseInMemorySnapshotStore<TState>(this StoreConfigurator configurator) where TState : IState
+        public static StoreConfigurator<TState> UseInMemorySnapshotStore<TState>(this StoreConfigurator<TState> configurator)
+            where TState : class, IState
         {
             configurator.Collection.Replace(ServiceDescriptor.Describe(
                 typeof(ISnapshotStore<TState>),
@@ -21,7 +22,8 @@ namespace Insperex.EventHorizon.EventStore.InMemory.Extensions
             return configurator;
         }
 
-        public static StoreConfigurator UseInMemoryViewStore<TState>(this StoreConfigurator configurator) where TState : IState
+        public static StoreConfigurator<TState> UseInMemoryViewStore<TState>(this StoreConfigurator<TState> configurator)
+            where TState : class, IState
         {
             configurator.Collection.Replace(ServiceDescriptor.Describe(
                 typeof(IViewStore<TState>),
