@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Destructurama;
 using Insperex.EventHorizon.Abstractions.Extensions;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Samples.Handlers;
@@ -31,7 +32,13 @@ public class Program
                 {
                     // Add Stream
                     // x.AddInMemoryEventStream();
-                    x.AddPulsarEventStream(context.Configuration.GetSection("Pulsar").Bind);
+                    x.AddPulsarClient(context.Configuration.GetSection("Pulsar").Bind)
+                        .AddEventStreaming(s =>
+                            s.WithPulsarStream<Event, Feed1PriceChanged>(p =>
+                                    p.WithTenantNamespaceTopic("persistent://example/feed1/event"))
+                                .WithPulsarStream<Event, Feed1PriceChanged>(p =>
+                                    p.WithTenantNamespaceTopic("persistent://example/feed2/event"))
+                        );
 
                     // Add Hosted Subscription
                     x.AddSubscription<PriceChangeTracker, Event>(h =>

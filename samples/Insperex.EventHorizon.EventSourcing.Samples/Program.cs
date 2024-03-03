@@ -10,7 +10,7 @@ using Insperex.EventHorizon.EventSourcing.Samples.Models.View;
 using Insperex.EventHorizon.EventSourcing.Samples.Subscriptions;
 using Insperex.EventHorizon.EventStore.ElasticSearch.Extensions;
 using Insperex.EventHorizon.EventStore.MongoDb.Extensions;
-using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
+using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Subscriptions.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -45,11 +45,24 @@ public class Program
                         services.AddEventHorizon(x =>
                         {
                             x.AddEventSourcing()
-                                
+
+                                // Add Clients
+                                .AddPulsarClient(context.Configuration.GetSection("Pulsar").Bind)
+                                .AddMongoDbClient(context.Configuration.GetSection("MongoDb").Bind)
+                                .AddElasticClient(context.Configuration.GetSection("ElasticSearch").Bind)
+
+                                // Add EventSourcing
+                                .AddEventSourcing(s =>
+                                    s.WithPulsarStream<Event, Account>(p => p.WithTenantNamespaceTopic("persistent://account/account/event"))
+                                        .WithPulsarStream<Request, Account>(p => p.WithTenantNamespaceTopic("persistent://account/account/request"))
+                                        .WithPulsarStream<Command, Account>(p => p.WithTenantNamespaceTopic("persistent://account/account/command"))
+                                )
+
                                 // Stores
                                 .AddMongoDbSnapshotStore(context.Configuration.GetSection("MongoDb").Bind)
                                 .AddElasticViewStore(context.Configuration.GetSection("ElasticSearch").Bind)
-                                .AddPulsarEventStream(context.Configuration.GetSection("Pulsar").Bind)
+
+
 
                                 // Hosted
                                 .ApplyRequestsToSnapshot<Account>()
