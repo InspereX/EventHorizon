@@ -1,9 +1,7 @@
 ﻿using System;
 using Insperex.EventHorizon.Abstractions;
-using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStore.Locks;
 using Insperex.EventHorizon.EventStore.MongoDb.Models;
-using Insperex.EventHorizon.EventStore.MongoDb.Stores;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -24,21 +22,6 @@ public static class EventHorizonConfiguratorExtensions
         configurator.Collection.Configure(onConfig);
         configurator.Collection.AddSingleton(typeof(LockFactory<>));
         configurator.AddClientResolver<MongoClientResolver, MongoClient>();
-        return configurator;
-    }
-
-    public static EventHorizonConfigurator AddMongoDbSnapshotStore(this EventHorizonConfigurator configurator, Action<MongoConfig> onConfig)
-    {
-        AddMongoDbClient(configurator, onConfig);
-        configurator.Collection.AddSingleton(typeof(ISnapshotStore<>), typeof(MongoSnapshotStore<>));
-        configurator.Collection.AddSingleton(typeof(ILockStore<>), typeof(MongoLockStore<>));
-        return configurator;
-    }
-
-    public static EventHorizonConfigurator AddMongoDbViewStore(this EventHorizonConfigurator configurator, Action<MongoConfig> onConfig)
-    {
-        AddMongoDbClient(configurator, onConfig);
-        configurator.Collection.AddSingleton(typeof(IViewStore<>), typeof(MongoViewStore<>));
         return configurator;
     }
 }

@@ -8,7 +8,7 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar.Extensions
 {
     public static class StreamingConfiguratorExtensions
     {
-        public static StreamConfigurator WithPulsarStream<TMessage, TPayload>(this StreamConfigurator configurator, Action<PulsarTopicConfigurator<TMessage, TPayload>> onConfig)
+        public static StreamConfigurator WithPulsarStream<TMessage, TPayload>(this StreamConfigurator configurator, Action<PulsarTopicConfigurator<TMessage, TPayload>> onConfig = null)
             where TMessage : ITopicMessage
             where TPayload : IPayload
         {

@@ -9,7 +9,9 @@ using Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.View;
 using Insperex.EventHorizon.EventSourcing.Samples.Subscriptions;
 using Insperex.EventHorizon.EventStore.ElasticSearch.Extensions;
+using Insperex.EventHorizon.EventStore.InMemory.Extensions;
 using Insperex.EventHorizon.EventStore.MongoDb.Extensions;
+using Insperex.EventHorizon.EventStore.ElasticSearch.Extensions;
 using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Subscriptions.Extensions;
@@ -53,14 +55,17 @@ public class Program
 
                                 // Add EventSourcing
                                 .AddEventSourcing(s =>
-                                    s.WithPulsarStream<Event, Account>(p => p.WithTenantNamespaceTopic("persistent://account/account/event"))
-                                        .WithPulsarStream<Request, Account>(p => p.WithTenantNamespaceTopic("persistent://account/account/request"))
-                                        .WithPulsarStream<Command, Account>(p => p.WithTenantNamespaceTopic("persistent://account/account/command"))
+                                    s.WithStreamConfig(sc => sc
+                                        .WithPulsarStream<Event, Account>()
+                                        .WithPulsarStream<Request, Account>()
+                                        .WithPulsarStream<Command, Account>()
+                                    )
+                                    .WithStoreConfig(sc =>
+                                    {
+                                        s.UseMongoDbSnapshotStore<Account>();
+                                        s.UseInMemoryViewStore<Account>();
+                                    })
                                 )
-
-                                // Stores
-                                .AddMongoDbSnapshotStore(context.Configuration.GetSection("MongoDb").Bind)
-                                .AddElasticViewStore(context.Configuration.GetSection("ElasticSearch").Bind)
 
 
 
