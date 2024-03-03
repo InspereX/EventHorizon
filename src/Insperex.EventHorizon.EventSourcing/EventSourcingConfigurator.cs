@@ -3,15 +3,18 @@ using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.EventStore;
 using Insperex.EventHorizon.EventStreaming;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualBasic;
 
 namespace Insperex.EventHorizon.EventSourcing
 {
     public class EventSourcingConfigurator<TState>
         where TState : class, IState
     {
+        internal IServiceCollection Collection;
+
         public EventSourcingConfigurator(IServiceCollection collection)
         {
-
+            Collection = collection;
         }
 
         public EventSourcingConfigurator<TState> WithStoreConfig(Action<StoreConfigurator<TState>> onConfig)

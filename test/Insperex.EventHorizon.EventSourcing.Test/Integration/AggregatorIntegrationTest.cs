@@ -47,7 +47,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
             {
                 services.AddEventHorizon(x =>
                 {
-                    x.AddEventSourcing()
+                    x.AddAggregator()
 
                         // Hosts
                         .ApplyRequestsToSnapshot<Account>()

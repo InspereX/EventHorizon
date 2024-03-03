@@ -27,20 +27,21 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar
         internal Policies NamespacePolicies { get; private set; } = new Policies();
 
 
-        public PulsarTopicConfigurator(AttributeUtil attributeUtil, Type payloadPayloadType)
+        public PulsarTopicConfigurator(AttributeUtil attributeUtil)
         {
-            PayloadType = payloadPayloadType;
+            PayloadType = typeof(TPayload);
             MessageType = typeof(TMessage);
 
             var defaultTenant = AssemblyUtil.AssemblyName;
             var defaultNamespace = $"{MessageType.Name}-{PayloadType.Name}";
 
             // Set Defaults
-            var pulsarAttr = attributeUtil.GetOne<PulsarNamespaceAttribute>(payloadPayloadType);
-            var streamAttr = attributeUtil.GetAll<StreamAttribute>(payloadPayloadType).First(x => x.SubType == null);
-            WithTenant(pulsarAttr?.Tenant ?? defaultTenant);
-            WithNamespace(pulsarAttr?.Namespace ?? defaultNamespace);
-            WithTopic(streamAttr?.Topic ?? defaultNamespace);
+            var pulsarAttr = attributeUtil.GetOne<PulsarNamespaceAttribute>(PayloadType);
+            var streamAttr = attributeUtil.GetAll<StreamAttribute>(PayloadType).First(x => x.SubType == null);
+            var tenant = pulsarAttr?.Tenant ?? defaultTenant;
+            var @namespace = pulsarAttr?.Namespace ?? defaultNamespace;
+            var topic = streamAttr?.Topic ?? defaultNamespace;
+            WithTopic($"persistent://{tenant}/{@namespace}/{topic}");
 
             if (typeof(TMessage) == typeof(Event))
             {
@@ -60,36 +61,12 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar
             }
         }
 
-        public PulsarTopicConfigurator<TMessage, TPayload> WithTenant(string name, Action<TenantInfo> onConfig = null)
-        {
-            Tenant = name;
-
-            // Apply Config
-            if (onConfig == null) return this;
-            TenantInfo ??= new TenantInfo();
-            onConfig.Invoke(TenantInfo);
-
-            return this;
-        }
-
         public PulsarTopicConfigurator<TMessage, TPayload> WithTenantInfo(Action<TenantInfo> onConfig = null)
         {
             // Apply Config
             if (onConfig == null) return this;
             TenantInfo ??= new TenantInfo();
             onConfig.Invoke(TenantInfo);
-
-            return this;
-        }
-
-        public PulsarTopicConfigurator<TMessage, TPayload> WithNamespace(string name, Action<Policies> onConfig = null)
-        {
-            Namespace = name;
-
-            // Apply Config
-            if (onConfig == null) return this;
-            NamespacePolicies ??= new Policies();
-            onConfig.Invoke(NamespacePolicies);
 
             return this;
         }
@@ -106,16 +83,9 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar
 
         public PulsarTopicConfigurator<TMessage, TPayload> WithTopic(string name)
         {
-            Topic = name;
-
-            return this;
-        }
-
-        public PulsarTopicConfigurator<TMessage, TPayload> WithTenantNamespaceTopic(string name)
-        {
             var parts = PulsarTopicParser.Parse(name);
-            Topic = parts.Tenant;
-            Topic = parts.Namespace;
+            Tenant = parts.Tenant;
+            Namespace = parts.Namespace;
             Topic = parts.Topic;
             return this;
         }

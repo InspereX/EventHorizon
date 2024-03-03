@@ -53,17 +53,13 @@ public class Program
                                 .AddInMemoryClient()
 
                                 // Add EventSourcing
-                                .AddEventSourcing<Account>(s =>
-                                    s.WithStreamConfig(sc => sc
-                                            .WithPulsarStream<Event, Account>()
-                                            .WithPulsarStream<Request, Account>()
-                                            .WithPulsarStream<Command, Account>()
+                                .AddAggregator<Account>(e =>
+                                    e.UseMongoForStores(s => s.WithDatabase("account"))
+                                        .WithStreamConfig(s => s
+                                            .WithPulsarStream<Event, Account>(p => p.WithTopic("persistent://account/account/event"))
+                                            .WithPulsarStream<Request, Account>(p => p.WithTopic("persistent://account/account/request"))
+                                            .WithPulsarStream<Command, Account>(p => p.WithTopic("persistent://account/account/command"))
                                         )
-                                        .WithStoreConfig(sc =>
-                                        {
-                                            sc.UseMongoDbSnapshotStore();
-                                            sc.UseInMemoryViewStore();
-                                        })
                                 )
 
 

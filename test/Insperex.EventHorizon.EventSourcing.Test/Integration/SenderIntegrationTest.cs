@@ -50,7 +50,7 @@ public class SenderIntegrationTest : IAsyncLifetime
             {
                 services.AddEventHorizon(x =>
                 {
-                    x.AddEventSourcing()
+                    x.AddAggregator()
 
                         // Stores
                         .AddInMemoryViewStore()
@@ -73,7 +73,7 @@ public class SenderIntegrationTest : IAsyncLifetime
             {
                 services.AddEventHorizon(x =>
                 {
-                    x.AddEventSourcing()
+                    x.AddAggregator()
 
                         // Hosts
                         .ApplyRequestsToSnapshot<Account>(a => a.BatchSize(10000))

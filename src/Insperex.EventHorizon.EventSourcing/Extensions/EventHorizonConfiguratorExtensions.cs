@@ -10,7 +10,7 @@ namespace Insperex.EventHorizon.EventSourcing.Extensions
 {
     public static class EventHorizonConfiguratorExtensions
     {
-        public static EventHorizonConfigurator AddEventSourcing<TState>(this EventHorizonConfigurator configurator, Action<EventSourcingConfigurator<TState>> onConfig = null)
+        public static EventHorizonConfigurator AddAggregator<TState>(this EventHorizonConfigurator configurator, Action<EventSourcingConfigurator<TState>> onConfig = null)
             where TState : class, IState
         {
             var streamConfigurator = new EventSourcingConfigurator<TState>(configurator.Collection);

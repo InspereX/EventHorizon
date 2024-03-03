@@ -35,9 +35,9 @@ public class Program
                     x.AddPulsarClient(context.Configuration.GetSection("Pulsar").Bind)
                         .AddEventStreaming(s =>
                             s.WithPulsarStream<Event, Feed1PriceChanged>(p =>
-                                    p.WithTenantNamespaceTopic("persistent://example/feed1/event"))
+                                    p.WithTopic("persistent://example/feed1/event"))
                                 .WithPulsarStream<Event, Feed1PriceChanged>(p =>
-                                    p.WithTenantNamespaceTopic("persistent://example/feed2/event"))
+                                    p.WithTopic("persistent://example/feed2/event"))
                         );
 
                     // Add Hosted Subscription
