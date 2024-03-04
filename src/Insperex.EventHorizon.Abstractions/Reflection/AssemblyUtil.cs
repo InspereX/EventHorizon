@@ -11,7 +11,7 @@ namespace Insperex.EventHorizon.Abstractions.Reflection
         public static readonly string AssemblyName = Assembly.GetName().Name;
         public static string AssemblyNameWithGuid => $"{AssemblyName}_{Guid.NewGuid().ToString()[..8]}";
 
-        private static readonly Type[] AssemblyTypes = DependencyContext.Default?.CompileLibraries
+        private static readonly Lazy<Type[]> AssemblyTypes = new(() => DependencyContext.Default?.CompileLibraries
             .SelectMany(x =>
             {
                 try
@@ -24,9 +24,9 @@ namespace Insperex.EventHorizon.Abstractions.Reflection
                 }
             })
             .Where(x => x != null)
-            .ToArray();
+            .ToArray());
 
-        public static Type[] GetTypes<T>() => AssemblyTypes
+        public static Type[] GetTypes<T>() => AssemblyTypes.Value
             .Where(x => typeof(T).IsAssignableFrom(x) && x.IsClass).ToArray();
     }
 }

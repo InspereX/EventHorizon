@@ -22,8 +22,8 @@ public static class HostTestUtil
             {
                 services.AddEventHorizon(x =>
                 {
-                    x.AddElasticSnapshotStore(context.Configuration.GetSection("ElasticSearch").Bind)
-                        .AddElasticViewStore(context.Configuration.GetSection("ElasticSearch").Bind);
+                    x.UseElasticSnapshotStore(context.Configuration.GetSection("ElasticSearch").Bind)
+                        .UseElasticViewStore(context.Configuration.GetSection("ElasticSearch").Bind);
                 });
             })
             .Build()

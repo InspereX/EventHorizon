@@ -1,40 +1,28 @@
 using System;
-using Insperex.EventHorizon.Abstractions;
+using Insperex.EventHorizon.Abstractions.Interfaces;
+using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Util;
-using Insperex.EventHorizon.EventStreaming.Admins;
 using Insperex.EventHorizon.EventStreaming.Interfaces.Streaming;
-using Insperex.EventHorizon.EventStreaming.Publishers;
-using Insperex.EventHorizon.EventStreaming.Pulsar.Models;
-using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Pulsar.Client.Api;
 
 namespace Insperex.EventHorizon.EventStreaming.Pulsar.Extensions
 {
     public static class StreamingConfiguratorExtensions
     {
-        public static EventHorizonConfigurator AddPulsarClient(this EventHorizonConfigurator configurator, Action<PulsarConfig> onConfig)
+        public static StreamConfigurator WithPulsarStream<TMessage, TPayload>(this StreamConfigurator configurator, Action<PulsarTopicConfigurator<TMessage, TPayload>> onConfig = null)
+            where TMessage : ITopicMessage
+            where TPayload : IPayload
         {
-            configurator.Collection.Configure(onConfig);
-            configurator.AddClientResolver<PulsarClientResolver, PulsarClient>();
-            return configurator;
-        }
+            configurator.Collection.AddSingleton(x =>
+            {
+                var c = new PulsarTopicConfigurator<TMessage, TPayload>(x.GetRequiredService<AttributeUtil>());
+                onConfig?.Invoke(c);
+                return c;
+            });
 
-        public static EventHorizonConfigurator AddPulsarEventStream(this EventHorizonConfigurator configurator, Action<PulsarConfig> onConfig)
-        {
             // Add Admin and Factory
-            AddPulsarClient(configurator, onConfig);
-            configurator.Collection.AddSingleton(typeof(ITopicAdmin<>), typeof(PulsarTopicAdmin<>));
-            configurator.Collection.AddSingleton(typeof(IStreamFactory<>), typeof(PulsarStreamFactory<>));
-
-            // Common
-            configurator.Collection.AddSingleton(typeof(StreamingClient<>));
-            configurator.Collection.AddSingleton(typeof(PublisherBuilder<>));
-            configurator.Collection.AddSingleton(typeof(ReaderBuilder<>));
-            configurator.Collection.AddSingleton(typeof(SubscriptionBuilder<>));
-            configurator.Collection.AddSingleton(typeof(Admin<>));
-
+            configurator.Collection.AddSingleton(typeof(ITopicAdmin<TMessage>), typeof(PulsarTopicAdmin<TMessage>));
+            configurator.Collection.AddSingleton(typeof(IStreamFactory<TMessage>), typeof(PulsarStreamFactory<TMessage>));
             return configurator;
         }
     }

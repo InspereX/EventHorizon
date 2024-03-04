@@ -21,8 +21,8 @@ public class Program
             {
                 services.AddEventHorizon(x =>
                 {
-                    x.AddPulsarEventStream(hostContext.Configuration.GetSection("Pulsar").Bind);
-                    x.AddMongoDbSnapshotStore(hostContext.Configuration.GetSection("MongoDb").Bind);
+                    x.AddPulsarClient(hostContext.Configuration.GetSection("Pulsar").Bind);
+                    x.AddMongoDbClient(hostContext.Configuration.GetSection("MongoDb").Bind);
                     // x.AddSubscription<NullStreamConsumer, Event>(s =>
                     //     s.AddStream<FileEntryEvent>()
                     //         .BatchSize(10000)

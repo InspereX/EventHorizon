@@ -9,8 +9,10 @@ using Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.View;
 using Insperex.EventHorizon.EventSourcing.Samples.Subscriptions;
 using Insperex.EventHorizon.EventStore.ElasticSearch.Extensions;
+using Insperex.EventHorizon.EventStore.InMemory.Extensions;
 using Insperex.EventHorizon.EventStore.MongoDb.Extensions;
-using Insperex.EventHorizon.EventStreaming.InMemory.Extensions;
+using Insperex.EventHorizon.EventStore.ElasticSearch.Extensions;
+using Insperex.EventHorizon.EventStreaming.Extensions;
 using Insperex.EventHorizon.EventStreaming.Pulsar.Extensions;
 using Insperex.EventHorizon.EventStreaming.Subscriptions.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -44,12 +46,22 @@ public class Program
                         services.AddScoped<SearchAccountViewMiddleware>();
                         services.AddEventHorizon(x =>
                         {
-                            x.AddEventSourcing()
-                                
-                                // Stores
-                                .AddMongoDbSnapshotStore(context.Configuration.GetSection("MongoDb").Bind)
-                                .AddElasticViewStore(context.Configuration.GetSection("ElasticSearch").Bind)
-                                .AddPulsarEventStream(context.Configuration.GetSection("Pulsar").Bind)
+                            // Add Clients
+                            x.AddPulsarClient(context.Configuration.GetSection("Pulsar").Bind)
+                                .AddMongoDbClient(context.Configuration.GetSection("MongoDb").Bind)
+                                .AddElasticClient(context.Configuration.GetSection("ElasticSearch").Bind)
+                                .AddInMemoryClient()
+
+                                // Add EventSourcing
+                                .AddAggregator<Account>(e =>
+                                    e.WithStoreConfig(sc => sc.UseMongoForStores())
+                                        .WithStreamConfig(s => s
+                                            .WithPulsarStream<Event, Account>()
+                                            .WithPulsarStream<Request, Account>()
+                                            .WithPulsarStream<Command, Account>()
+                                        )
+                                )
+
 
                                 // Hosted
                                 .ApplyRequestsToSnapshot<Account>()

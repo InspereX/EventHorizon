@@ -19,4 +19,11 @@
         <ProjectReference Include="..\Insperex.EventHorizon.EventStreaming\Insperex.EventHorizon.EventStreaming.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="Insperex.EventHorizon.EventStore" />
+        <InternalsVisibleTo Include="Insperex.EventHorizon.EventStore.ElasticSearch" />
+        <InternalsVisibleTo Include="Insperex.EventHorizon.EventStore.InMemory" />
+        <InternalsVisibleTo Include="Insperex.EventHorizon.EventStore.MongoDb" />
+    </ItemGroup>
+
 </Project>
