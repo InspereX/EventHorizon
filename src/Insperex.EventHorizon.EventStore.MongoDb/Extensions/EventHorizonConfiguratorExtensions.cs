@@ -41,4 +41,11 @@ public static class EventHorizonConfiguratorExtensions
         configurator.Collection.AddSingleton(typeof(IViewStore<>), typeof(MongoViewStore<>));
         return configurator;
     }
+
+    public static EventHorizonConfigurator AddMongoDbEventStore(this EventHorizonConfigurator configurator, Action<MongoConfig> onConfig)
+    {
+        AddMongoDbClient(configurator, onConfig);
+        configurator.Collection.AddSingleton(typeof(IEventStore<>), typeof(MongoEventStore<>));
+        return configurator;
+    }
 }
