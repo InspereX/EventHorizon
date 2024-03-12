@@ -25,13 +25,13 @@ public class WorkflowFactory<TState> where TState : class, IState
         public HandleAndApplyEvents<Snapshot<TState>, TState, Request> HandleRequests(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Request>(onConfig);
         public HandleAndApplyEvents<Snapshot<TState>, TState, Event> HandleEvents(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Event>(onConfig);
 
-        public ApplyEventsWorkflow<Snapshot<TState>, TState> ApplyEvents(Action<WorkflowConfigurator<TState>> onConfig = null)
+        public ApplyEventsWorkflow<View<TState>, TState> ApplyEvents(Action<WorkflowConfigurator<TState>> onConfig = null)
         {
             var config = new WorkflowConfigurator<TState>(_provider);
             onConfig?.Invoke(config);
 
-            var workflowService = new WorkflowService<Snapshot<TState>, TState, Event>(_provider, config.WorkflowMiddleware);
-            return new ApplyEventsWorkflow<Snapshot<TState>, TState>(_streamingClient, workflowService, config);
+            var workflowService = new WorkflowService<View<TState>, TState, Event>(_provider, config.WorkflowMiddleware);
+            return new ApplyEventsWorkflow<View<TState>, TState>(_streamingClient, workflowService, config);
         }
 
         public RebuildAllWorkflow<Snapshot<TState>, TState> RebuildAll(Action<WorkflowConfigurator<TState>> onConfig = null)
