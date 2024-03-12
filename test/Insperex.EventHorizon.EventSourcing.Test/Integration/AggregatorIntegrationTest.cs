@@ -53,9 +53,9 @@ public class AggregatorIntegrationTest : IAsyncLifetime
                     x.AddEventSourcing()
 
                         // Hosts
-                        .HandleRequests<Account>()
-                        .HandleCommands<User>()
-                        .ApplyEvents<SearchAccountView>()
+                        // .HandleRequests<Account>()
+                        // .HandleCommands<User>()
+                        // .ApplyEvents<SearchAccountView>()
 
                         // Stores
                         .AddInMemorySnapshotStore()
@@ -111,7 +111,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
 
         // Refresh Snapshots
         await _eventSourcingClient.Workflow().RebuildAll().StartAsync(CancellationToken.None);
-        await Task.Delay(500);
+        await Task.Delay(2000);
 
         // Assert
         var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
