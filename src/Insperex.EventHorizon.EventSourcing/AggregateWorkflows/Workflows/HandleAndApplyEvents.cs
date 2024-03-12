@@ -22,10 +22,10 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows
         private readonly WorkflowService<TWrapper, TState, TMessage> _workflowService;
         private readonly Subscription<TMessage> _subscription;
 
-        public HandleAndApplyEvents(StreamingClient<TMessage> streamingClient,
+        public HandleAndApplyEvents(StreamingClient streamingClient,
             WorkflowService<TWrapper, TState, TMessage> workflowService, WorkflowConfigurator<TState> configurator)
         {
-            var subscriptionBuilder = streamingClient.CreateSubscription()
+            var subscriptionBuilder = streamingClient.CreateSubscription<TMessage>()
                 .SubscriptionName($"Handle{typeof(TMessage).Name}AndApplyEvents-{typeof(TState).Name}")
                 .AddStateStream<TState>()
                 .OnBatch(OnBatch)

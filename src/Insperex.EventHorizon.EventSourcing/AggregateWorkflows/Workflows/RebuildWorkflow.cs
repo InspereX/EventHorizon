@@ -20,9 +20,9 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows
         private readonly Aggregator<TWrapper, TState> _aggregator;
         private readonly Subscription<Event> _subscription;
 
-        public RebuildAllWorkflow(StreamingClient<Event> streamingClient, Aggregator<TWrapper, TState> aggregator, WorkflowConfigurator<TState> configurator)
+        public RebuildAllWorkflow(StreamingClient streamingClient, Aggregator<TWrapper, TState> aggregator, WorkflowConfigurator<TState> configurator)
         {
-            var subscriptionBuilder = streamingClient.CreateSubscription()
+            var subscriptionBuilder = streamingClient.CreateSubscription<Event>()
                 .SubscriptionName($"RebuildAll-{typeof(TState).Name}")
                 .AddStateStream<TState>()
                 .StopAtEnd(true)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using Insperex.EventHorizon.Abstractions.Formatters;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
@@ -71,6 +72,6 @@ public class AggregatorBuilder<TParent, T>
             _validationUtil.Validate<TParent, T>();
 
         var logger = _loggerFactory.CreateLogger<Aggregator<TParent, T>>();
-        return new Aggregator<TParent, T>(_crudStore, _streamingClient, _provider, config, logger);
+        return new Aggregator<TParent, T>(_crudStore, _streamingClient, _provider.GetRequiredService<Formatter>(), logger);
     }
 }

@@ -18,9 +18,9 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows
         private readonly WorkflowService<TWrapper, TState, Event> _workflowService;
         private readonly Subscription<Event> _subscription;
 
-        public ApplyEventsWorkflow(StreamingClient<Event> streamingClient, WorkflowService<TWrapper, TState, Event> workflowService, WorkflowConfigurator<TState> configurator)
+        public ApplyEventsWorkflow(StreamingClient streamingClient, WorkflowService<TWrapper, TState, Event> workflowService, WorkflowConfigurator<TState> configurator)
         {
-            var subscriptionBuilder = streamingClient.CreateSubscription()
+            var subscriptionBuilder = streamingClient.CreateSubscription<Event>()
                 .SubscriptionName($"ApplyEvents-{typeof(TState).Name}")
                 .AddStateStream<TState>()
                 .OnBatch(OnBatch)

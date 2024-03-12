@@ -34,12 +34,12 @@ public class Aggregator<TParent, TState>
     public Aggregator(
         ICrudStore<TParent> crudStore,
         StreamingClient streamingClient,
-        IServiceProvider provider,
+        Formatter formatter,
         ILogger<Aggregator<TParent, TState>> logger)
     {
         _crudStore = crudStore;
         _streamingClient = streamingClient;
-        _eventTopic = provider.GetRequiredService<Formatter>().GetTopic<Event>(_stateType);
+        _eventTopic = formatter.GetTopic<Event>(_stateType);
         _logger = logger;
     }
 

@@ -12,10 +12,10 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows
 {
 public class AggregateWorkflowFactory<TState> where TState : class, IState
     {
-        private readonly StreamingClient<> _streamingClient;
+        private readonly StreamingClient _streamingClient;
         private readonly IServiceProvider _provider;
 
-        public AggregateWorkflowFactory(StreamingClient<> streamingClient, IServiceProvider provider)
+        public AggregateWorkflowFactory(StreamingClient streamingClient, IServiceProvider provider)
         {
             _streamingClient = streamingClient;
             _provider = provider;

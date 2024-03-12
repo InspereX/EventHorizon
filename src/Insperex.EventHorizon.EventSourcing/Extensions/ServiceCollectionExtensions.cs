@@ -81,15 +81,17 @@ public static class ServiceCollectionExtensions
         return configurator;
     }
 
-    public static EventHorizonConfigurator ApplyEvents<TState>(this EventHorizonConfigurator configurator)
+    public static EventHorizonConfigurator ApplyEvents<TState>(this EventHorizonConfigurator configurator, Action<WorkflowConfigurator<TState>> onConfig = null)
         where TState : class, IState
     {
         configurator.AddEventSourcing();
         configurator.Collection.AddSingleton(x =>
         {
             var streamingClient = x.GetRequiredService<StreamingClient>();
-            var workflowService = new WorkflowService<View<TState>, TState, Event>(x, null);
-            return new ApplyEventsWorkflow<View<TState>, TState>(streamingClient, workflowService, null);
+            var configurator = new WorkflowConfigurator<TState>();
+            onConfig?.Invoke(configurator);
+            var workflowService = new WorkflowService<View<TState>, TState, Event>(x, configurator.WorkflowMiddleware);
+            return new ApplyEventsWorkflow<View<TState>, TState>(streamingClient, workflowService, configurator);
         });
 
         return configurator;
