@@ -13,7 +13,7 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces
         Task StopAsync(CancellationToken cancellationToken);
     }
 
-    public interface IWorkflow<TState, in TMessage>
+    public interface IWorkflow<TState, in TMessage> : IWorkflow
         where TMessage : ITopicMessage
         where TState : IState
     {

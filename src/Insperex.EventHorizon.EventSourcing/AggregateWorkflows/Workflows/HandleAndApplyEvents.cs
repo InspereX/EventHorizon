@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
+using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStreaming;
 

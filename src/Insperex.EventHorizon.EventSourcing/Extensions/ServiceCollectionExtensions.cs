@@ -5,6 +5,7 @@ using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.AggregateWorkflows;
+using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
 using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows;
 using Insperex.EventHorizon.EventSourcing.Senders;
 using Insperex.EventHorizon.EventSourcing.Util;
@@ -13,6 +14,7 @@ using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Insperex.EventHorizon.EventSourcing.Extensions;
 
@@ -27,6 +29,7 @@ public static class ServiceCollectionExtensions
         configurator.Collection.TryAddSingleton(typeof(WorkflowService<,,>));
         configurator.Collection.TryAddSingleton<SenderSubscriptionTracker>();
         configurator.Collection.TryAddSingleton<ValidationUtil>();
+        configurator.Collection.TryAddSingleton<IHostedService, WorkflowHostedService>();
 
         return configurator;
     }
@@ -36,7 +39,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleRequests(onConfig));
+        configurator.Collection.AddSingleton<IWorkflow>(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleRequests(onConfig));
 
         return configurator;
     }
@@ -46,7 +49,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleCommands(onConfig));
+        configurator.Collection.AddSingleton<IWorkflow>(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleCommands(onConfig));
 
         return configurator;
     }
@@ -56,7 +59,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleEvents(onConfig));
+        configurator.Collection.AddSingleton<IWorkflow>(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleEvents(onConfig));
 
         return configurator;
     }
@@ -65,7 +68,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().ApplyEvents(onConfig));
+        configurator.Collection.AddSingleton<IWorkflow>(x => x.GetRequiredService<WorkflowFactory<TState>>().ApplyEvents(onConfig));
 
         return configurator;
     }
