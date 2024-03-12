@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStore.Models;
@@ -20,7 +21,6 @@ public abstract class AbstractMongoCrudStore<T> : ICrudStore<T>
     private const string Id = "_id";
     private const string Name = "name";
     private const string Document = "Document";
-    private const string UpdatedDate1 = "UpdatedDate_1";
     private const string CreatedDate1 = "CreatedDate_1";
     private const string Tilda1 = "`1";
     private const string ErrorPrefix = "_id: \"";
@@ -61,8 +61,6 @@ public abstract class AbstractMongoCrudStore<T> : ICrudStore<T>
 
         if (_mongoAttr?.TimeToLiveMs != null)
             await AddIndex(CreatedDate1, Builders<T>.IndexKeys.Ascending(x => x.CreatedDate), TimeSpan.FromMilliseconds(_mongoAttr.TimeToLiveMs));
-
-        await AddIndex(UpdatedDate1, Builders<T>.IndexKeys.Ascending(x => x.UpdatedDate));
     }
 
     public async Task<T[]> GetAllAsync(string[] ids, CancellationToken ct)

@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace Insperex.EventHorizon.EventStore.Interfaces;
+namespace Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 
 public interface ICrudEntity
 {
     public string Id { get; set; }
-    public DateTime UpdatedDate { get; set; }
     public DateTime CreatedDate { get; set; }
 }
