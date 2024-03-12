@@ -1,15 +1,10 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
-using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
-using Insperex.EventHorizon.EventSourcing.Extensions;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStreaming;
-using Insperex.EventHorizon.EventStreaming.Subscriptions;
 
 namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows
 {
@@ -19,7 +14,9 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows
     {
         private readonly Aggregator<TWrapper, TState> _aggregator;
 
-        public RebuildAllWorkflow(Aggregator<TWrapper, TState> aggregator, StreamingClient streamingClient, WorkflowService<TWrapper, TState, Event> workflowService, WorkflowConfigurator<TState> configurator) : base(streamingClient, workflowService, configurator)
+        public RebuildAllWorkflow(Aggregator<TWrapper, TState> aggregator,
+            StreamingClient streamingClient, WorkflowService<TWrapper, TState, Event> workflowService,
+            WorkflowConfigurator<TState> configurator) : base("RebuildEvents", streamingClient, workflowService, configurator)
         {
             _aggregator = aggregator;
         }

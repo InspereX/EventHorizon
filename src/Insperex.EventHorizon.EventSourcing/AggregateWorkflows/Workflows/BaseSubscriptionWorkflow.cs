@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
-using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
 using Insperex.EventHorizon.EventSourcing.Extensions;
@@ -22,11 +21,11 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows
         private readonly WorkflowService<TWrapper, TState, TMessage> _workflowService;
         private readonly Subscription<TMessage> _subscription;
 
-        public BaseSubscriptionWorkflow(StreamingClient streamingClient, WorkflowService<TWrapper, TState, TMessage> workflowService, WorkflowConfigurator<TState> configurator)
+        public BaseSubscriptionWorkflow(string name, StreamingClient streamingClient, WorkflowService<TWrapper, TState, TMessage> workflowService, WorkflowConfigurator<TState> configurator)
         {
             _workflowService = workflowService;
             var subscriptionBuilder = streamingClient.CreateSubscription<TMessage>()
-                .SubscriptionName($"ApplyEvents-{typeof(TState).Name}")
+                .SubscriptionName($"{name}-{typeof(TState).Name}")
                 .AddStateStream<TState>()
                 .BatchSize(configurator.BatchSize ?? 1000)
                 .OnBatch(async batch =>

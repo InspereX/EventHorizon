@@ -15,7 +15,7 @@ namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows
         private readonly WorkflowService<TWrapper, TState, Event> _workflowService;
 
         public ApplyEventsWorkflow(StreamingClient streamingClient, WorkflowService<TWrapper, TState, Event> workflowService, WorkflowConfigurator<TState> configurator)
-            : base(streamingClient, workflowService, configurator)
+            : base("ApplyEvents", streamingClient, workflowService, configurator)
         {
             _workflowService = workflowService;
         }
