@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
         configurator.AddEventSourcing();
         configurator.Collection.AddSingleton(x =>
         {
-            var streamingClient = x.GetRequiredService<StreamingClient<Request>>();
+            var streamingClient = x.GetRequiredService<StreamingClient>();
             var configurator = new WorkflowConfigurator<TState>();
             onConfig?.Invoke(configurator);
             var workflowService = new WorkflowService<Snapshot<TState>, TState, Request>(x, configurator.WorkflowMiddleware);
@@ -54,7 +54,7 @@ public static class ServiceCollectionExtensions
         configurator.AddEventSourcing();
         configurator.Collection.AddSingleton(x =>
         {
-            var streamingClient = x.GetRequiredService<StreamingClient<Command>>();
+            var streamingClient = x.GetRequiredService<StreamingClient>();
             var configurator = new WorkflowConfigurator<TState>();
             onConfig?.Invoke(configurator);
             var workflowService = new WorkflowService<Snapshot<TState>, TState, Command>(x, configurator.WorkflowMiddleware);
@@ -71,7 +71,7 @@ public static class ServiceCollectionExtensions
         configurator.AddEventSourcing();
         configurator.Collection.AddSingleton(x =>
         {
-            var streamingClient = x.GetRequiredService<StreamingClient<Event>>();
+            var streamingClient = x.GetRequiredService<StreamingClient>();
             var configurator = new WorkflowConfigurator<TState>();
             onConfig?.Invoke(configurator);
             var workflowService = new WorkflowService<Snapshot<TState>, TState, Event>(x, configurator.WorkflowMiddleware);
@@ -87,7 +87,7 @@ public static class ServiceCollectionExtensions
         configurator.AddEventSourcing();
         configurator.Collection.AddSingleton(x =>
         {
-            var streamingClient = x.GetRequiredService<StreamingClient<Event>>();
+            var streamingClient = x.GetRequiredService<StreamingClient>();
             var workflowService = new WorkflowService<View<TState>, TState, Event>(x, null);
             return new ApplyEventsWorkflow<View<TState>, TState>(streamingClient, workflowService, null);
         });
