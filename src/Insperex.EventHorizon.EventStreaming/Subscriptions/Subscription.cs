@@ -75,7 +75,7 @@ public class Subscription<TMessage> : IAsyncDisposable
             try
             {
                 var batch = await GetNextBatch();
-                if (batch.Length != 0)
+                if (batch?.Length > 0)
                 {
                     await ProcessBatch(batch);
                 }
