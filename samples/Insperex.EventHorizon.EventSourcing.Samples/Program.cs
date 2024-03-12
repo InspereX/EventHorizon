@@ -55,7 +55,7 @@ public class Program
 
                                 // Hosted
                                 .HandleRequests<Account>()
-                                .ApplyEvents<SearchAccountView>(h => h.WithMiddleware(services.SearchAccountViewMiddleware))
+                                .ApplyEvents<SearchAccountView>(h => h.WithMiddleware<SearchAccountViewMiddleware>())
 
                                 .AddSubscription<AccountConsumer, Event>(s => s.AddStream<IEvent<Account>>());
                         });

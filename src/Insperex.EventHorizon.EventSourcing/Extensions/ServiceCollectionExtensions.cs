@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         configurator.Collection.TryAddSingleton(typeof(EventSourcingClient<>));
         configurator.Collection.TryAddSingleton(typeof(AggregatorBuilder<,>));
         configurator.Collection.TryAddSingleton(typeof(SenderBuilder<>));
+        configurator.Collection.TryAddSingleton(typeof(WorkflowFactory<>));
         configurator.Collection.TryAddSingleton(typeof(WorkflowService<,,>));
         configurator.Collection.TryAddSingleton<SenderSubscriptionTracker>();
         configurator.Collection.TryAddSingleton<ValidationUtil>();
@@ -35,14 +36,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x =>
-        {
-            var streamingClient = x.GetRequiredService<StreamingClient>();
-            var configurator = new WorkflowConfigurator<TState>();
-            onConfig?.Invoke(configurator);
-            var workflowService = new WorkflowService<Snapshot<TState>, TState, Request>(x, configurator.WorkflowMiddleware);
-            return new HandleAndApplyEvents<Snapshot<TState>, TState, Request>(streamingClient, workflowService, configurator);
-        });
+        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleRequests(onConfig));
 
         return configurator;
     }
@@ -52,14 +46,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x =>
-        {
-            var streamingClient = x.GetRequiredService<StreamingClient>();
-            var configurator = new WorkflowConfigurator<TState>();
-            onConfig?.Invoke(configurator);
-            var workflowService = new WorkflowService<Snapshot<TState>, TState, Command>(x, configurator.WorkflowMiddleware);
-            return new HandleAndApplyEvents<Snapshot<TState>, TState, Command>(streamingClient, workflowService, configurator);
-        });
+        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleCommands(onConfig));
 
         return configurator;
     }
@@ -69,14 +56,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x =>
-        {
-            var streamingClient = x.GetRequiredService<StreamingClient>();
-            var configurator = new WorkflowConfigurator<TState>();
-            onConfig?.Invoke(configurator);
-            var workflowService = new WorkflowService<Snapshot<TState>, TState, Event>(x, configurator.WorkflowMiddleware);
-            return new HandleAndApplyEvents<Snapshot<TState>, TState, Event>(streamingClient, workflowService, configurator);
-        });
+        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().HandleEvents(onConfig));
 
         return configurator;
     }
@@ -85,14 +65,7 @@ public static class ServiceCollectionExtensions
         where TState : class, IState
     {
         configurator.AddEventSourcing();
-        configurator.Collection.AddSingleton(x =>
-        {
-            var streamingClient = x.GetRequiredService<StreamingClient>();
-            var configurator = new WorkflowConfigurator<TState>();
-            onConfig?.Invoke(configurator);
-            var workflowService = new WorkflowService<View<TState>, TState, Event>(x, configurator.WorkflowMiddleware);
-            return new ApplyEventsWorkflow<View<TState>, TState>(streamingClient, workflowService, configurator);
-        });
+        configurator.Collection.AddSingleton(x => x.GetRequiredService<WorkflowFactory<TState>>().ApplyEvents(onConfig));
 
         return configurator;
     }

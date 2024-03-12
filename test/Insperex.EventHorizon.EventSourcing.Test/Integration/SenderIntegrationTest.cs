@@ -76,7 +76,7 @@ public class SenderIntegrationTest : IAsyncLifetime
                     x.AddEventSourcing()
 
                         // Hosts
-                        .HandleRequests<Account>(a => a.BatchSize(10000))
+                        .HandleRequests<Account>(a => a.WithBatchSize(10000))
 
                         // Stores
                         .AddInMemoryViewStore()
