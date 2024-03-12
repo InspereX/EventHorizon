@@ -83,6 +83,14 @@ public class Aggregate<T>
             Apply(new Event(Id, SequenceId, item));
     }
 
+    public void Handle(Event @event)
+    {
+        var context = new AggregateContext(Exists());
+        StateDetail.TriggerHandler(AllStates, context, @event);
+        foreach(var item in context.Events)
+            Apply(new Event(Id, SequenceId, item));
+    }
+
     public void Apply(IEvent<T> @event)
     {
         Apply(new Event(Id, ++SequenceId, @event));

@@ -54,7 +54,7 @@ public class Program
                                 .AddPulsarEventStream(context.Configuration.GetSection("Pulsar").Bind)
 
                                 // Hosted
-                                .ApplyRequestsToSnapshot<Account>()
+                                .HandleRequests<Account>()
                                 .ApplyEventsToView<SearchAccountView>(h =>
                                     h.UseMiddleware<SearchAccountViewMiddleware>())
 

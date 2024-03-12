@@ -17,6 +17,7 @@ namespace Insperex.EventHorizon.Abstractions.Reflection
         // Handlers
         public Dictionary<Type, Dictionary<string, MethodInfo>> HandlersDict { get; set; }
         public Dictionary<Type, Dictionary<string, Type>> MessageTypeDict { get; set; }
+        public Dictionary<string, MethodInfo> EventAppliers { get; set; }
 
         public readonly PropertyInfo[] PropertiesWithStates;
         public readonly Type[] SubStates;
@@ -36,8 +37,11 @@ namespace Insperex.EventHorizon.Abstractions.Reflection
             {
                 [typeof(Command)] = GetHandlers(typeof(IHandleCommand<>), "Handle"),
                 [typeof(Request)] = GetHandlers(typeof(IHandleRequest<,>), "Handle"),
-                [typeof(Event)] = GetHandlers(typeof(IApplyEvent<>), "Apply")
+                [typeof(Event)] = GetHandlers(typeof(IHandleEvent<>), "Handle")
             };
+
+            EventAppliers = GetHandlers(typeof(IApplyEvent<>), "Apply");
+
 
             // Handler Types
             MessageTypeDict = new Dictionary<Type, Dictionary<string, Type>>
@@ -89,7 +93,7 @@ namespace Insperex.EventHorizon.Abstractions.Reflection
             foreach (var state in stateDict)
             {
                 var stateDetail = ReflectionFactory.GetStateDetail(state.Key);
-                var method = stateDetail.HandlersDict[messageType].GetValueOrDefault(message.Type);
+                var method = stateDetail.EventAppliers.GetValueOrDefault(message.Type);
                 if(method == null) continue;
                 var payload = message.GetPayload(stateDetail.MessageTypeDict[messageType]);
                 method?.Invoke(state.Value, parameters: new [] { payload } );

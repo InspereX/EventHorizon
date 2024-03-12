@@ -2,7 +2,7 @@
 using System.Threading;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
-using Insperex.EventHorizon.EventSourcing.Interfaces;
+using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
 using Insperex.EventHorizon.EventSourcing.Util;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventSourcing.Aggregates;
 
-public class AggregateBuilder<TParent, T>
+public class AggregatorBuilder<TParent, T>
     where TParent : class, IStateParent<T>, new()
     where T : class, IState
 {
@@ -25,12 +25,12 @@ public class AggregateBuilder<TParent, T>
     private readonly StreamingClient<Event> _streamingClient;
     private bool _isValidationEnabled = true;
     private bool _isRebuildEnabled;
-    private IAggregateMiddleware<T> _middleware;
+    private IWorkflowMiddleware<T> _middleware;
     private readonly LockFactory<T> _lockFactory;
     private int? _batchSize;
-    private readonly ILogger<AggregateBuilder<TParent, T>> _logger;
+    private readonly ILogger<AggregatorBuilder<TParent, T>> _logger;
 
-    public AggregateBuilder(
+    public AggregatorBuilder(
         IServiceProvider provider,
         StreamingClient<Event> streamingClient,
         ILoggerFactory loggerFactory)
@@ -43,31 +43,12 @@ public class AggregateBuilder<TParent, T>
         _provider = provider;
         _streamingClient = streamingClient;
         _loggerFactory = loggerFactory;
-        _logger = loggerFactory.CreateLogger<AggregateBuilder<TParent, T>>();
+        _logger = loggerFactory.CreateLogger<AggregatorBuilder<TParent, T>>();
     }
 
-    public AggregateBuilder<TParent, T> IsRebuildEnabled(bool isRebuildEnabled)
-    {
-        _isRebuildEnabled = isRebuildEnabled;
-        return this;
-    }
-
-    public AggregateBuilder<TParent, T> IsValidationEnabled(bool isValidationEnabled)
+    public AggregatorBuilder<TParent, T> IsValidationEnabled(bool isValidationEnabled)
     {
         _isValidationEnabled = isValidationEnabled;
-        return this;
-    }
-
-    public AggregateBuilder<TParent, T> BatchSize(int batchSize)
-    {
-        _batchSize = batchSize;
-        return this;
-    }
-
-    public AggregateBuilder<TParent, T> UseMiddleware<TMiddle>() where TMiddle : IAggregateMiddleware<T>
-    {
-        using var scope = _provider.CreateScope();
-        _middleware = scope.ServiceProvider.GetRequiredService<TMiddle>();
         return this;
     }
 
@@ -76,9 +57,6 @@ public class AggregateBuilder<TParent, T>
         var config = new AggregateConfig<T>
         {
             IsValidationEnabled = _isValidationEnabled,
-            IsRebuildEnabled = _isRebuildEnabled,
-            Middleware = _middleware,
-            BatchSize = _batchSize
         };
 
         // Create Store
