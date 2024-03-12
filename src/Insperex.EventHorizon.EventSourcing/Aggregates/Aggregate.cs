@@ -20,7 +20,7 @@ public class Aggregate<T>
     where T : IState
 {
     private static readonly Type Type = typeof(T);
-    private static readonly StateDetail StateDetail = ReflectionFactory.GetStateDetail(typeof(T));
+    private static readonly StateDetail StateDetail = ReflectionFactory.GetStateDetail(Type);
     private Dictionary<Type, object> AllStates { get; set; }
 
     internal readonly List<Event> Events = new();
