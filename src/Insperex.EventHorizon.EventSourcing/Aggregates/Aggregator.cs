@@ -25,125 +25,22 @@ public class Aggregator<TParent, TState>
 {
     private readonly Type _stateType = typeof(TState);
     private readonly string _stateTypeName = typeof(TState).Name;
-    private readonly AggregateConfig<TState> _config;
     private readonly ICrudStore<TParent> _crudStore;
     private readonly ILogger<Aggregator<TParent, TState>> _logger;
-    private readonly StreamingClient<Event> _streamingClient;
-    private readonly IServiceProvider _provider;
+    private readonly StreamingClient _streamingClient;
     private readonly Dictionary<string, object> _publisherDict = new();
     private readonly string _eventTopic;
 
     public Aggregator(
         ICrudStore<TParent> crudStore,
-        StreamingClient<Event> streamingClient,
-        IServiceProvider provider,
-        AggregateConfig<TState> config,
+        StreamingClient streamingClient,
+        Formatter formatter,
         ILogger<Aggregator<TParent, TState>> logger)
     {
         _crudStore = crudStore;
         _streamingClient = streamingClient;
-        _eventTopic = provider.GetRequiredService<Formatter>().GetTopic<Event>(_stateType);
-        _provider = provider;
-        _config = config;
+        _eventTopic = formatter.GetTopic<Event>(_stateType);
         _logger = logger;
-    }
-
-    internal AggregateConfig<TState> GetConfig()
-    {
-        return _config;
-    }
-
-    public async Task RebuildAllAsync(CancellationToken ct)
-    {
-        // TODO: need to move
-        var reader = _streamingClient.CreateReader().AddStateStream<TState>().Build();
-
-        while (!ct.IsCancellationRequested)
-        {
-            var events = await reader.GetNextAsync(1000);
-            if (!events.Any()) break;
-
-            var lookup = events.ToLookup(x => x.Data.StreamId);
-            var streamIds = lookup.Select(x => x.Key).ToArray();
-            var models = await _crudStore.GetAllAsync(streamIds, ct);
-            var modelsDict = models.ToDictionary(x => x.Id);
-            var dict = new Dictionary<string, Aggregate<TState>>();
-            foreach (var streamId in streamIds)
-            {
-                var agg = modelsDict.ContainsKey(streamId)
-                    ? new Aggregate<TState>(modelsDict[streamId])
-                    : new Aggregate<TState>(streamId);
-
-                foreach (var message in lookup[streamId])
-                    agg.Apply(message.Data);
-
-                dict[agg.Id] = agg;
-            }
-
-            if(! dict.Any()) return;
-            await SaveSnapshotsAsync(dict);
-            await PublishEventsAsync(dict);
-            ResetAll(dict);
-        }
-    }
-
-    public async Task<Response> HandleAsync<TMessage>(TMessage message, CancellationToken ct) where TMessage : ITopicMessage
-    {
-        var responses = await HandleAsync(new[] { message }, ct);
-        return responses.FirstOrDefault();
-    }
-
-    public async Task<Response[]> HandleAsync<TMessage>(TMessage[] messages, CancellationToken ct) where TMessage : ITopicMessage
-    {
-        // Load Aggregate
-        var streamIds = messages.Select(x => x.StreamId).Distinct().ToArray();
-        var aggregateDict = await GetAggregatesFromStateAsync(streamIds, ct);
-
-        // Map/Apply Changes
-        TriggerHandle(messages, aggregateDict);
-
-        // Save Successful Aggregates and Events
-        await SaveAllAsync(aggregateDict);
-
-        return  aggregateDict.Values.SelectMany(x => x.Responses).ToArray();
-    }
-
-    private void TriggerHandle<TMesssage>(TMesssage[] messages, Dictionary<string, Aggregate<TState>> aggregateDict) where TMesssage : ITopicMessage
-    {
-        var sw = Stopwatch.StartNew();
-        foreach (var message in messages)
-        {
-            var agg = aggregateDict.GetValueOrDefault(message.StreamId);
-            if (agg.Error != null)
-                continue;
-            try
-            {
-                switch (message)
-                {
-                    case Command command: agg.Handle(command); break;
-                    case Request request: agg.Handle(request); break;
-                    case Event @event: agg.Apply(@event, false); break;
-                }
-            }
-            catch (Exception e)
-            {
-                agg.SetStatus(HttpStatusCode.InternalServerError, e.Message);
-            }
-        }
-
-        // OnCompleted Hook
-        var passed = aggregateDict.Values.Where(x => x.Error == null).ToArray();
-        try
-        {
-            _config.Middleware?.BeforeSave(passed);
-        }
-        catch (Exception e)
-        {
-            foreach (var agg in passed)
-                agg.SetStatus(HttpStatusCode.InternalServerError, e.Message);
-        }
-        _logger.LogInformation("TriggerHandled {Count} {Type} Aggregate(s) in {Duration}",
-            aggregateDict.Count, _stateTypeName, sw.ElapsedMilliseconds);
     }
 
     #region Save
@@ -162,18 +59,6 @@ public class Aggregator<TParent, TState>
             var first = group.First();
             _logger.LogError("{State} {Count} had {Status} => {Error}",
                 _stateTypeName, group.Count(), first.StatusCode, first.Error);
-        }
-
-        // OnCompleted Hook
-        var messages = aggregateDict.Values.ToArray();
-        try
-        {
-            _config.Middleware?.AfterSave(messages);
-        }
-        catch (Exception e)
-        {
-            foreach (var agg in messages)
-                agg.SetStatus(HttpStatusCode.InternalServerError, e.Message);
         }
     }
 
@@ -263,7 +148,7 @@ public class Aggregator<TParent, TState>
         where TMessage : class, ITopicMessage
     {
         if (!_publisherDict.ContainsKey(topic))
-            _publisherDict[topic] = _provider.GetRequiredService<StreamingClient<TMessage>>().CreatePublisher().AddTopic(topic).Build();
+            _publisherDict[topic] = _streamingClient.CreatePublisher<TMessage>().AddTopic(topic).Build();
         return _publisherDict[topic] as Publisher<TMessage>;
     }
 
@@ -301,20 +186,6 @@ public class Aggregator<TParent, TState>
             var aggregateDict = streamIds
                 .Select(x => parentDict.TryGetValue(x, out var value)? new Aggregate<TState>(value) : new Aggregate<TState>(x))
                 .ToDictionary(x => x.Id);
-
-            // OnCompleted Hook
-            var passed = aggregateDict.Values.Where(x => x.Error == null).ToArray();
-            try
-            {
-                _config.Middleware?.OnLoad(passed);
-            }
-            catch (Exception e)
-            {
-                foreach (var agg in passed)
-                    agg.SetStatus(HttpStatusCode.InternalServerError, e.Message);
-            }
-            _logger.LogInformation("Loaded {Count} {Type} Aggregate(s) in {Duration}",
-                aggregateDict.Count, _stateTypeName, sw.ElapsedMilliseconds);
 
             return aggregateDict;
         }
@@ -354,7 +225,7 @@ public class Aggregator<TParent, TState>
 
     public Task<MessageContext<Event>[]> GetEventsAsync(string[] streamIds, DateTime? endDateTime = null)
     {
-        var reader = _streamingClient.CreateReader().AddStateStream<TState>().Keys(streamIds).EndDateTime(endDateTime).Build();
+        var reader = _streamingClient.CreateReader<Event>().AddStateStream<TState>().Keys(streamIds).EndDateTime(endDateTime).Build();
         return reader.GetNextAsync(10000);
     }
 
@@ -365,9 +236,9 @@ public class Aggregator<TParent, TState>
     public async Task DropAllAsync(CancellationToken ct)
     {
         await _crudStore.DropDatabaseAsync(ct);
-        await _provider.GetRequiredService<StreamingClient<Event>>().GetAdmin().DeleteTopicAsync(_stateType, ct: ct);
-        await _provider.GetRequiredService<StreamingClient<Request>>().GetAdmin().DeleteTopicAsync(_stateType, ct: ct);
-        await _provider.GetRequiredService<StreamingClient<Command>>().GetAdmin().DeleteTopicAsync(_stateType, ct: ct);
+        await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(_stateType, ct: ct);
+        await _streamingClient.GetAdmin<Command>().DeleteTopicAsync(_stateType, ct: ct);
+        await _streamingClient.GetAdmin<Request>().DeleteTopicAsync(_stateType, ct: ct);
     }
 
     #endregion

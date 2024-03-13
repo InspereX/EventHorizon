@@ -27,6 +27,8 @@ public class SubscriptionBuilder<TMessage>
     private readonly Dictionary<string, Type> _typeDict = new();
     private int? _batchSize = 1000;
     private bool? _isBeginning = true;
+    private bool _isPreload;
+    private bool _stopAtEnd;
     private TimeSpan _noBatchDelay = TimeSpan.FromMilliseconds(10);
     private DateTime? _startDateTime;
     private string _subscriptionName = AssemblyUtil.AssemblyName;
@@ -35,7 +37,6 @@ public class SubscriptionBuilder<TMessage>
     private IBackoffStrategy _backoffStrategy = new ConstantBackoffStrategy {Delay = TimeSpan.FromMilliseconds(10)};
     private Func<SubscriptionContext<TMessage>, Task> _onBatch;
     private SubscriptionType _subscriptionType = Abstractions.Models.SubscriptionType.KeyShared;
-    private bool _isPreload;
     private readonly Type _messageType;
 
     public SubscriptionBuilder(Formatter formatter, IStreamFactory factory, ILoggerFactory loggerFactory)
@@ -51,15 +52,38 @@ public class SubscriptionBuilder<TMessage>
     {
         var rootStateType = typeof(TState);
 
+        // Loop States Inside State
         foreach (var stateType in ReflectionFactory.GetStateDetail(rootStateType).AllStateTypes)
         {
-            var stateDetails = ReflectionFactory.GetStateDetail(stateType);
-            var types = stateDetails.MessageTypeDict[_messageType];
-            if(types == null) continue;
+            var subStateDetails = ReflectionFactory.GetStateDetail(stateType);
+            var subStateTypes = subStateDetails.MessageTypeDict[_messageType];
+            if (subStateTypes.Count != 0)
+            {
+                // Add Types and Topics
+                _typeDict.AddRange(subStateTypes);
+                var topic = _formatter.GetTopic<TMessage>(assembly, stateType, nodeId);
+                if(!_topics.Contains(topic))
+                    _topics.Add(topic);
+            }
+            else
+            {
+                // Loop Sates from Events
+                // Note: needed for subscribers that don't own the actions (like views)
+                var actionStates = ReflectionFactory.GetStateDetail(stateType).MessageStateDict[_messageType];
+                foreach (var state in actionStates)
+                {
+                    var stateDetails = ReflectionFactory.GetStateDetail(state);
+                    var types = stateDetails.MessageTypeDict[_messageType];
+                    if(types == null) continue;
 
-            // Add Types and Topics
-            _typeDict.AddRange(types);
-            _topics.Add(_formatter.GetTopic<TMessage>(assembly, stateType, nodeId));
+                    // Add Types and Topics
+                    _typeDict.AddRange(types);
+                    var topic = _formatter.GetTopic<TMessage>(assembly, state, nodeId);
+                    if(!_topics.Contains(topic))
+                        _topics.Add(topic);
+                }
+            }
+
         }
 
         return this;
@@ -118,6 +142,12 @@ public class SubscriptionBuilder<TMessage>
         return this;
     }
 
+    public SubscriptionBuilder<TMessage> StopAtEnd(bool stopAtEnd)
+    {
+        _stopAtEnd = stopAtEnd;
+        return this;
+    }
+
     public SubscriptionBuilder<TMessage> RedeliverFailedMessages(bool redeliver)
     {
         _redeliverFailedMessages = redeliver;
@@ -157,6 +187,7 @@ public class SubscriptionBuilder<TMessage>
             StartDateTime = _startDateTime,
             IsBeginning = _isBeginning,
             IsPreload = _isPreload,
+            StopAtEnd = _stopAtEnd,
             RedeliverFailedMessages = _redeliverFailedMessages,
             IsMessageOrderGuaranteedOnFailure = _guaranteeMessageOrderOnFailure,
             BackoffStrategy = _backoffStrategy,

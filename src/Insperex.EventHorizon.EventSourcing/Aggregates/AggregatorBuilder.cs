@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Threading;
+using Insperex.EventHorizon.Abstractions.Formatters;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
-using Insperex.EventHorizon.EventSourcing.Interfaces;
+using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
 using Insperex.EventHorizon.EventSourcing.Util;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
@@ -14,7 +15,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventSourcing.Aggregates;
 
-public class AggregateBuilder<TParent, T>
+public class AggregatorBuilder<TParent, T>
     where TParent : class, IStateParent<T>, new()
     where T : class, IState
 {
@@ -22,17 +23,17 @@ public class AggregateBuilder<TParent, T>
     private readonly ILoggerFactory _loggerFactory;
     private readonly ValidationUtil _validationUtil;
     private readonly IServiceProvider _provider;
-    private readonly StreamingClient<Event> _streamingClient;
+    private readonly StreamingClient _streamingClient;
     private bool _isValidationEnabled = true;
     private bool _isRebuildEnabled;
-    private IAggregateMiddleware<T> _middleware;
+    private IWorkflowMiddleware<T> _middleware;
     private readonly LockFactory<T> _lockFactory;
     private int? _batchSize;
-    private readonly ILogger<AggregateBuilder<TParent, T>> _logger;
+    private readonly ILogger<AggregatorBuilder<TParent, T>> _logger;
 
-    public AggregateBuilder(
+    public AggregatorBuilder(
         IServiceProvider provider,
-        StreamingClient<Event> streamingClient,
+        StreamingClient streamingClient,
         ILoggerFactory loggerFactory)
     {
         _crudStore = typeof(TParent).Name == typeof(Snapshot<>).Name?
@@ -43,31 +44,12 @@ public class AggregateBuilder<TParent, T>
         _provider = provider;
         _streamingClient = streamingClient;
         _loggerFactory = loggerFactory;
-        _logger = loggerFactory.CreateLogger<AggregateBuilder<TParent, T>>();
+        _logger = loggerFactory.CreateLogger<AggregatorBuilder<TParent, T>>();
     }
 
-    public AggregateBuilder<TParent, T> IsRebuildEnabled(bool isRebuildEnabled)
-    {
-        _isRebuildEnabled = isRebuildEnabled;
-        return this;
-    }
-
-    public AggregateBuilder<TParent, T> IsValidationEnabled(bool isValidationEnabled)
+    public AggregatorBuilder<TParent, T> IsValidationEnabled(bool isValidationEnabled)
     {
         _isValidationEnabled = isValidationEnabled;
-        return this;
-    }
-
-    public AggregateBuilder<TParent, T> BatchSize(int batchSize)
-    {
-        _batchSize = batchSize;
-        return this;
-    }
-
-    public AggregateBuilder<TParent, T> UseMiddleware<TMiddle>() where TMiddle : IAggregateMiddleware<T>
-    {
-        using var scope = _provider.CreateScope();
-        _middleware = scope.ServiceProvider.GetRequiredService<TMiddle>();
         return this;
     }
 
@@ -76,9 +58,6 @@ public class AggregateBuilder<TParent, T>
         var config = new AggregateConfig<T>
         {
             IsValidationEnabled = _isValidationEnabled,
-            IsRebuildEnabled = _isRebuildEnabled,
-            Middleware = _middleware,
-            BatchSize = _batchSize
         };
 
         // Create Store
@@ -93,6 +72,6 @@ public class AggregateBuilder<TParent, T>
             _validationUtil.Validate<TParent, T>();
 
         var logger = _loggerFactory.CreateLogger<Aggregator<TParent, T>>();
-        return new Aggregator<TParent, T>(_crudStore, _streamingClient, _provider, config, logger);
+        return new Aggregator<TParent, T>(_crudStore, _streamingClient, _provider.GetRequiredService<Formatter>(), logger);
     }
 }

@@ -28,10 +28,10 @@ namespace Insperex.EventHorizon.EventStreaming.Pulsar.Extensions
 
             // Pulsar
             configurator.Collection.AddSingleton(typeof(IStreamFactory), typeof(PulsarStreamFactory));
-            configurator.Collection.Replace(new ServiceDescriptor(typeof(ITopicFormatter), typeof(PulsarTopicFormatter)));
+            configurator.Collection.Replace(new ServiceDescriptor(typeof(ITopicFormatter), typeof(PulsarTopicFormatter), ServiceLifetime.Singleton));
 
             // Common
-            configurator.Collection.AddSingleton(typeof(StreamingClient<>));
+            configurator.Collection.AddSingleton<StreamingClient>();
             configurator.Collection.AddSingleton(typeof(PublisherBuilder<>));
             configurator.Collection.AddSingleton(typeof(ReaderBuilder<>));
             configurator.Collection.AddSingleton(typeof(SubscriptionBuilder<>));
