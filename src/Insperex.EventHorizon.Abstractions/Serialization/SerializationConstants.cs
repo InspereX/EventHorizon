@@ -8,11 +8,11 @@ namespace Insperex.EventHorizon.Abstractions.Serialization
     {
         public static readonly ISerializer Serializer = new SystemJsonSerializer();
 
-        public static readonly Dictionary<CompressionType, ICompression> CompressionDict = new();
+        public static readonly Dictionary<Compression.Compression, ICompression> CompressionDict = new();
 
         static SerializationConstants()
         {
-            CompressionDict[CompressionType.Gzip] = new GzipCompression();
+            CompressionDict[Compression.Compression.Gzip] = new GzipCompression();
         }
     }
 }

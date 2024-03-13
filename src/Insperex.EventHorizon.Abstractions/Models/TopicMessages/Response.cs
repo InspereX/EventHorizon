@@ -12,7 +12,7 @@ public class Response : ITopicMessage
     public string StreamId { get; set; }
     public string Type { get; set; }
     public string Payload { get; set; }
-    public CompressionType? CompressionType { get; set; }
+    public Compression? CompressionType { get; set; }
     public byte[] Data { get; set; }
     public int StatusCode { get; set; }
     public string Error { get; set; }

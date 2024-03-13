@@ -4,7 +4,7 @@ namespace Insperex.EventHorizon.Abstractions.Serialization.Compression.Extension
 {
     public static class CompressibleExtensions
     {
-        public static void Compress<T>(this ICompressible<T> compressible, CompressionType? compressionType) where T : class
+        public static void Compress<T>(this ICompressible<T> compressible, Compression? compressionType) where T : class
         {
             if (compressionType == null || compressible.CompressionType != null)
                 return;

@@ -10,6 +10,6 @@ namespace Insperex.EventHorizon.EventSourcing.Senders;
 public class SenderConfig
 {
     public TimeSpan Timeout { get; set; }
-    public CompressionType Compression { get; set; }
+    public Compression Compression { get; set; }
     public Func<Request, HttpStatusCode, string, IResponse> GetErrorResult { get; set; }
 }

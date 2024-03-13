@@ -11,10 +11,12 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Serialization.Compression.Extensions;
+using Insperex.EventHorizon.EventStore;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.Publishers;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventSourcing.Aggregates;
@@ -25,12 +27,12 @@ public class Aggregator<TParent, TState>
 {
     private readonly Type _stateType = typeof(TState);
     private readonly string _stateTypeName = typeof(TState).Name;
-    private readonly ICrudStore<TParent> _crudStore;
     private readonly ILogger<Aggregator<TParent, TState>> _logger;
     private readonly StreamingClient _streamingClient;
     private readonly AggregatorConfig<TState> _config;
     private readonly Dictionary<string, object> _publisherDict = new();
     private readonly string _eventTopic;
+    private readonly Store<TParent, TState> _store;
 
     public Aggregator(
         ICrudStore<TParent> crudStore,
@@ -39,7 +41,7 @@ public class Aggregator<TParent, TState>
         AggregatorConfig<TState> config,
         ILogger<Aggregator<TParent, TState>> logger)
     {
-        _crudStore = crudStore;
+        _store = new StoreBuilder<TParent, TState>(crudStore).AddCompression(config.StateCompression).Build();
         _streamingClient = streamingClient;
         _config = config;
         _eventTopic = formatter.GetTopic<Event>(_stateType);
@@ -92,7 +94,7 @@ public class Aggregator<TParent, TState>
                 foreach (var parent in parents)
                     parent.Compress(_config.StateCompression);
 
-            var results = await _crudStore.UpsertAllAsync(parents, CancellationToken.None);
+            var results = await _store.UpsertAllAsync(parents, CancellationToken.None);
             foreach (var id in results.FailedIds)
                 aggregateDict[id].SetStatus(HttpStatusCode.InternalServerError, "Snapshot Failed to Save");
             foreach (var id in results.PassedIds)
@@ -187,7 +189,7 @@ public class Aggregator<TParent, TState>
             // Load Snapshots
             var sw = Stopwatch.StartNew();
             streamIds = streamIds.Distinct().ToArray();
-            var snapshots = await _crudStore.GetAllAsync(streamIds, ct);
+            var snapshots = await _store.GetAllAsync(streamIds, ct);
             var parentDict = snapshots.ToDictionary(x => x.Id);
 
             // Decompress
@@ -247,7 +249,7 @@ public class Aggregator<TParent, TState>
 
     public async Task DropAllAsync(CancellationToken ct)
     {
-        await _crudStore.DropDatabaseAsync(ct);
+        await _store.DropDatabaseAsync(ct);
         await _streamingClient.GetAdmin<Event>().DeleteTopicAsync(_stateType, ct: ct);
         await _streamingClient.GetAdmin<Command>().DeleteTopicAsync(_stateType, ct: ct);
         await _streamingClient.GetAdmin<Request>().DeleteTopicAsync(_stateType, ct: ct);

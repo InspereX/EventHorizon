@@ -26,7 +26,7 @@ public class PublisherBuilder<TMessage>
     private int _batchSize = 100;
     private bool _isOrderGuaranteed = true;
     private readonly Type _messageType;
-    private CompressionType? _compressionType;
+    private Compression? _compressionType;
 
     public PublisherBuilder(Formatter formatter, IStreamFactory factory, ILoggerFactory loggerFactory)
     {
@@ -69,7 +69,7 @@ public class PublisherBuilder<TMessage>
         return this;
     }
 
-    public PublisherBuilder<TMessage> AddCompression(CompressionType? compressionType)
+    public PublisherBuilder<TMessage> AddCompression(Compression? compressionType)
     {
         _compressionType = compressionType;
         return this;

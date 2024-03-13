@@ -2,9 +2,7 @@
 using System.Threading;
 using Insperex.EventHorizon.Abstractions.Formatters;
 using Insperex.EventHorizon.Abstractions.Interfaces;
-using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Serialization.Compression;
-using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Interfaces;
 using Insperex.EventHorizon.EventSourcing.Util;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
@@ -28,8 +26,8 @@ public class AggregatorBuilder<TParent, T>
     private bool _isValidationEnabled = true;
     private readonly LockFactory<T> _lockFactory;
     private readonly ILogger<AggregatorBuilder<TParent, T>> _logger;
-    private CompressionType? _stateCompression;
-    private CompressionType _eventCompression;
+    private Compression? _stateCompression;
+    private Compression? _eventCompression;
 
     public AggregatorBuilder(
         IServiceProvider provider,
@@ -53,13 +51,13 @@ public class AggregatorBuilder<TParent, T>
         return this;
     }
 
-    public AggregatorBuilder<TParent, T> StateCompression(CompressionType stateCompression)
+    public AggregatorBuilder<TParent, T> StateCompression(Compression? stateCompression)
     {
         _stateCompression = stateCompression;
         return this;
     }
 
-    public AggregatorBuilder<TParent, T> EventCompression(CompressionType eventCompression)
+    public AggregatorBuilder<TParent, T> EventCompression(Compression? eventCompression)
     {
         _eventCompression = eventCompression;
         return this;

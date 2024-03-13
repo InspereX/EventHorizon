@@ -12,5 +12,5 @@ public class PublisherConfig
     public bool IsGuaranteed { get; set; }
     public TimeSpan SendTimeout { get; set; }
     public int BatchSize { get; set; }
-    public CompressionType? CompressionType { get; set; }
+    public Compression? CompressionType { get; set; }
 }

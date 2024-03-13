@@ -16,7 +16,7 @@ public class SenderBuilder<TState> where TState : IState
     private readonly ILoggerFactory _loggerFactory;
     private Func<Request, HttpStatusCode, string, IResponse> _getErrorResult;
     private TimeSpan _timeout = TimeSpan.FromSeconds(120);
-    private CompressionType _compression;
+    private Compression _compression;
 
     public SenderBuilder(SenderSubscriptionTracker subscriptionTracker, IServiceProvider provider, ILoggerFactory loggerFactory)
     {
@@ -25,9 +25,9 @@ public class SenderBuilder<TState> where TState : IState
         _loggerFactory = loggerFactory;
     }
 
-    public SenderBuilder<TState> Compression(CompressionType compressionType)
+    public SenderBuilder<TState> Compression(Compression compression)
     {
-        _compression = compressionType;
+        _compression = compression;
         return this;
     }
 

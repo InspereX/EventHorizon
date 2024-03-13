@@ -16,7 +16,7 @@ namespace Insperex.EventHorizon.EventSourcing.Test.Unit
         {
             // Act
             var @event = new Event("123", new ExampleEvent { Name = "Name" });
-            @event.Compress(CompressionType.Gzip);
+            @event.Compress(Compression.Gzip);
 
             // Assert
             Assert.Null(@event.Payload);
@@ -30,7 +30,7 @@ namespace Insperex.EventHorizon.EventSourcing.Test.Unit
         {
             // Act
             var @event = new Event("123", new ExampleEvent { Name = "Name" });
-            @event.Compress(CompressionType.Gzip);
+            @event.Compress(Compression.Gzip);
             @event.Decompress();
 
             // Assert

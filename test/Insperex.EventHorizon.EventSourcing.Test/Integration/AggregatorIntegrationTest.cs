@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Destructurama;
 using Insperex.EventHorizon.Abstractions.Extensions;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 using Insperex.EventHorizon.Abstractions.Testing;
 using Insperex.EventHorizon.EventSourcing.Aggregates;
 using Insperex.EventHorizon.EventSourcing.AggregateWorkflows.Workflows;
@@ -14,6 +15,7 @@ using Insperex.EventHorizon.EventSourcing.Samples.Models.Actions;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.Snapshots;
 using Insperex.EventHorizon.EventSourcing.Samples.Models.View;
 using Insperex.EventHorizon.EventSourcing.Test.Fakers;
+using Insperex.EventHorizon.EventStore;
 using Insperex.EventHorizon.EventStore.Extensions;
 using Insperex.EventHorizon.EventStore.InMemory.Extensions;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
@@ -40,7 +42,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     private readonly EventSourcingClient<Account> _eventSourcingClient;
     private readonly HandleAndApplyEventsWorkflow<Snapshot<User>, User, Command> _userCommandWorkflow;
     private readonly ApplyEventsWorkflow<View<Account>, Account> _accountApplyEventWorkflow;
-    private readonly ICrudStore<View<Account>> _accountViewStore;
+    private readonly Store<Snapshot<Account>, Account> _accountViewStore;
 
     public AggregatorIntegrationTest(ITestOutputHelper output)
     {
@@ -76,10 +78,18 @@ public class AggregatorIntegrationTest : IAsyncLifetime
             .Build();
 
         _eventSourcingClient = _host.Services.GetRequiredService<EventSourcingClient<Account>>();
-        _accountViewStore = _eventSourcingClient.GetViewStore();
-        _userAggregator = _host.Services.GetRequiredService<EventSourcingClient<User>>().Aggregator().Build();
-        _userCommandWorkflow = _host.Services.GetRequiredService<EventSourcingClient<User>>().Workflow().HandleCommands();
-        _accountApplyEventWorkflow = _host.Services.GetRequiredService<EventSourcingClient<Account>>().Workflow().ApplyEvents();
+        _accountViewStore = _eventSourcingClient.GetViewStore().Build();
+        _userAggregator = _host.Services.GetRequiredService<EventSourcingClient<User>>().Aggregator()
+            .Build();
+
+        _userCommandWorkflow = _host.Services.GetRequiredService<EventSourcingClient<User>>().Workflow()
+            .HandleCommands(x =>
+                x.WithAggregate(b => b.StateCompression(Compression.Gzip).EventCompression(Compression.Gzip))
+            );
+        _accountApplyEventWorkflow = _host.Services.GetRequiredService<EventSourcingClient<Account>>().Workflow()
+            .ApplyEvents(x =>
+                x.WithAggregate(b => b.StateCompression(Compression.Gzip).EventCompression(Compression.Gzip))
+            );
 
 
         _streamingClient = _host.Services.GetRequiredService<StreamingClient>();

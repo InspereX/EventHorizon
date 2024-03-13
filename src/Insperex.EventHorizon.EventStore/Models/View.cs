@@ -28,7 +28,7 @@ public class View<T> : IStateParent<T>
     public string Id { get; set; }
     public long SequenceId { get; set; }
     public T Payload { get; set; }
-    public CompressionType? CompressionType { get; set; }
+    public Compression? CompressionType { get; set; }
     public byte[] Data { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime UpdatedDate { get; set; }

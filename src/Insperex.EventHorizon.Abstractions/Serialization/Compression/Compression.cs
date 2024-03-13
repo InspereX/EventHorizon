@@ -1,6 +1,6 @@
 namespace Insperex.EventHorizon.Abstractions.Serialization.Compression
 {
-    public enum CompressionType
+    public enum Compression
     {
         Gzip = 0
     }

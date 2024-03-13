@@ -144,7 +144,7 @@ public class SenderIntegrationTest : IAsyncLifetime
         Assert.True(HttpStatusCode.OK == (await result5).StatusCode, (await result5).Error);
 
         // Assert Account
-        var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
+        var aggregate  = await _eventSourcingClient.GetSnapshotStore().Build().GetAsync(streamId, CancellationToken.None);
         var events = await _eventSourcingClient.Aggregator().Build().GetEventsAsync(new[] { streamId });
         Assert.Equal(streamId, aggregate.Payload.Id);
         Assert.Equal(streamId, aggregate.Id);
