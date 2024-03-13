@@ -1,14 +1,18 @@
+using System;
 using System.Text.Json;
+using Insperex.EventHorizon.Abstractions.Compression;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 
 namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 
-public class Event : ITopicMessage
+public class Event : ITopicMessage, ICompressible<string>
 {
     public long SequenceId { get; set; }
     public string StreamId { get; set; }
     public string Type { get; set; }
     public string Payload { get; set; }
+    public CompressionType? CompressionType { get; set; }
+    public byte[] Data { get; set; }
 
     public Event()
     {
