@@ -25,10 +25,7 @@ public class AggregatorBuilder<TParent, T>
     private readonly IServiceProvider _provider;
     private readonly StreamingClient _streamingClient;
     private bool _isValidationEnabled = true;
-    private bool _isRebuildEnabled;
-    private IWorkflowMiddleware<T> _middleware;
     private readonly LockFactory<T> _lockFactory;
-    private int? _batchSize;
     private readonly ILogger<AggregatorBuilder<TParent, T>> _logger;
 
     public AggregatorBuilder(
