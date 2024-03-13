@@ -38,7 +38,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     private Stopwatch _stopwatch;
     private readonly Aggregator<Snapshot<User>, User> _userAggregator;
     private readonly EventSourcingClient<Account> _eventSourcingClient;
-    private readonly HandleAndApplyEvents<Snapshot<User>, User, Command> _userCommandWorkflow;
+    private readonly HandleAndApplyEventsWorkflow<Snapshot<User>, User, Command> _userCommandWorkflow;
     private readonly ApplyEventsWorkflow<View<Account>, Account> _accountApplyEventWorkflow;
     private readonly ICrudStore<View<Account>> _accountViewStore;
 

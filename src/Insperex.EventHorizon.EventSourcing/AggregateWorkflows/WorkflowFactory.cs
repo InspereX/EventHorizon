@@ -21,9 +21,9 @@ public class WorkflowFactory<TState> where TState : class, IState
             _provider = provider;
         }
 
-        public HandleAndApplyEvents<Snapshot<TState>, TState, Command> HandleCommands(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Command>(onConfig);
-        public HandleAndApplyEvents<Snapshot<TState>, TState, Request> HandleRequests(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Request>(onConfig);
-        public HandleAndApplyEvents<Snapshot<TState>, TState, Event> HandleEvents(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Event>(onConfig);
+        public HandleAndApplyEventsWorkflow<Snapshot<TState>, TState, Command> HandleCommands(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Command>(onConfig);
+        public HandleAndApplyEventsWorkflow<Snapshot<TState>, TState, Request> HandleRequests(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Request>(onConfig);
+        public HandleAndApplyEventsWorkflow<Snapshot<TState>, TState, Event> HandleEvents(Action<WorkflowConfigurator<TState>> onConfig = null) => Handle<Event>(onConfig);
 
         public ApplyEventsWorkflow<View<TState>, TState> ApplyEvents(Action<WorkflowConfigurator<TState>> onConfig = null)
         {
@@ -44,14 +44,14 @@ public class WorkflowFactory<TState> where TState : class, IState
             return new RebuildAllWorkflow<Snapshot<TState>, TState>(aggregator, _streamingClient, workflowService, config);
         }
 
-        private HandleAndApplyEvents<Snapshot<TState>, TState, TMessage> Handle<TMessage>(Action<WorkflowConfigurator<TState>> onConfig = null)
+        private HandleAndApplyEventsWorkflow<Snapshot<TState>, TState, TMessage> Handle<TMessage>(Action<WorkflowConfigurator<TState>> onConfig = null)
             where TMessage : class, ITopicMessage, new()
         {
             var config = new WorkflowConfigurator<TState>(_provider);
             onConfig?.Invoke(config);
 
             var workflowService = new WorkflowService<Snapshot<TState>, TState, TMessage>(_provider, config.WorkflowMiddleware);
-            return new HandleAndApplyEvents<Snapshot<TState>, TState, TMessage>(_streamingClient, workflowService, config);
+            return new HandleAndApplyEventsWorkflow<Snapshot<TState>, TState, TMessage>(_streamingClient, workflowService, config);
         }
     }
 }
