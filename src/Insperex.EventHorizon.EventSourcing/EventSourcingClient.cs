@@ -28,5 +28,5 @@ public class EventSourcingClient<TState> where TState : class, IState, new()
     public AggregatorBuilder<Snapshot<TState>, TState> Aggregator() => _serviceProvider.GetRequiredService<AggregatorBuilder<Snapshot<TState>, TState>>();
     public AggregatorBuilder<View<TState>, TState> ViewAggregator() => _serviceProvider.GetRequiredService<AggregatorBuilder<View<TState>, TState>>();
     public StoreBuilder<Snapshot<TState>, TState> GetSnapshotStore() => new(_serviceProvider.GetRequiredService<ISnapshotStore<TState>>());
-    public StoreBuilder<Snapshot<TState>, TState> GetViewStore() => new(_serviceProvider.GetRequiredService<ISnapshotStore<TState>>());
+    public StoreBuilder<View<TState>, TState> GetViewStore() => new(_serviceProvider.GetRequiredService<IViewStore<TState>>());
 }

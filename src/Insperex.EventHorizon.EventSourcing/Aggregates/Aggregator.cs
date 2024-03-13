@@ -89,11 +89,6 @@ public class Aggregator<TParent, TState>
             if (parents.Any() != true)
                 return;
 
-            // Compress
-            if(_config.StateCompression != null)
-                foreach (var parent in parents)
-                    parent.Compress(_config.StateCompression);
-
             var results = await _store.UpsertAllAsync(parents, CancellationToken.None);
             foreach (var id in results.FailedIds)
                 aggregateDict[id].SetStatus(HttpStatusCode.InternalServerError, "Snapshot Failed to Save");
