@@ -75,7 +75,7 @@ public class Aggregator<TParent, TState>
                 {
                     Id = x.Id,
                     SequenceId = x.SequenceId,
-                    State = x.State,
+                    Payload = x.State,
                     CreatedDate = x.CreatedDate,
                     UpdatedDate = x.UpdatedDate
                 })

@@ -115,11 +115,11 @@ public class AggregatorIntegrationTest : IAsyncLifetime
 
         // Assert
         var aggregate  = await _eventSourcingClient.GetSnapshotStore().GetAsync(streamId, CancellationToken.None);
-        Assert.Equal(streamId, aggregate.State.Id);
+        Assert.Equal(streamId, aggregate.Payload.Id);
         Assert.Equal(streamId, aggregate.Id);
         Assert.NotEqual(DateTime.MinValue, aggregate.CreatedDate);
         Assert.NotEqual(DateTime.MinValue, aggregate.UpdatedDate);
-        Assert.Equal(100, aggregate.State.Amount);
+        Assert.Equal(100, aggregate.Payload.Amount);
     }
 
     [Fact]
@@ -156,11 +156,11 @@ public class AggregatorIntegrationTest : IAsyncLifetime
 
         // Assert Account
         var aggregate1  = await _accountViewStore.GetAsync(streamId, CancellationToken.None);
-        Assert.Equal(streamId, aggregate1.State.Id);
+        Assert.Equal(streamId, aggregate1.Payload.Id);
         Assert.Equal(streamId, aggregate1.Id);
         Assert.Equal(1, aggregate1.SequenceId);
         Assert.NotEqual(DateTime.MinValue, aggregate1.CreatedDate);
         Assert.NotEqual(DateTime.MinValue, aggregate1.UpdatedDate);
-        Assert.Equal(100, aggregate1.State.Amount);
+        Assert.Equal(100, aggregate1.Payload.Amount);
     }
 }

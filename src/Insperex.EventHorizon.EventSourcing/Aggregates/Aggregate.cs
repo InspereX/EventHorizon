@@ -45,7 +45,7 @@ public class Aggregate<T>
     {
         Id = model.Id;
         SequenceId = model.SequenceId;
-        State = model.State;
+        State = model.Payload;
         CreatedDate = model.CreatedDate;
         UpdatedDate = model.UpdatedDate;
         Setup();
