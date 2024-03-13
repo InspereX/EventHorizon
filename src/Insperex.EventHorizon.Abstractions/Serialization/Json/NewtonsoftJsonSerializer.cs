@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Insperex.EventHorizon.Abstractions.Compression
+namespace Insperex.EventHorizon.Abstractions.Serialization.Json
 {
     public class NewtonsoftJsonSerializer : ISerializer
     {

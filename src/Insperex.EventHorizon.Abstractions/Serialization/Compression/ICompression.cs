@@ -1,4 +1,4 @@
-namespace Insperex.EventHorizon.Abstractions.Compression
+namespace Insperex.EventHorizon.Abstractions.Serialization.Compression
 {
     public interface ICompression
     {

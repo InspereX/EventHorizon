@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Insperex.EventHorizon.Abstractions.Compression
+namespace Insperex.EventHorizon.Abstractions.Serialization.Compression
 {
     public static class CompressionExtensions
     {
@@ -11,11 +11,11 @@ namespace Insperex.EventHorizon.Abstractions.Compression
 
             // Serialize
             var json = typeof(T) != typeof(string)
-                ? CompressionConstants.Serializer.Serialize(compressible.Payload)
+                ? SerializationConstants.Serializer.Serialize(compressible.Payload)
                 : compressible.Payload as string;
 
             // Compress
-            var compressor = CompressionConstants.CompressionDict[compressionType.Value];
+            var compressor = SerializationConstants.CompressionDict[compressionType.Value];
             var bytes = Encoding.UTF8.GetBytes(json);
 
             // Set Fields
@@ -30,13 +30,13 @@ namespace Insperex.EventHorizon.Abstractions.Compression
                 return;
 
             // Decompress
-            var compressor = CompressionConstants.CompressionDict[compressible.CompressionType.Value];
+            var compressor = SerializationConstants.CompressionDict[compressible.CompressionType.Value];
             var bytes = compressor.Decompress(compressible.Data);
             var json = Encoding.UTF8.GetString(bytes);
 
             // Deserialize
             compressible.Payload = typeof(T) != typeof(string)
-                ? CompressionConstants.Serializer.Deserialize<T>(json)
+                ? SerializationConstants.Serializer.Deserialize<T>(json)
                 : json as T;
 
             // Set Fields

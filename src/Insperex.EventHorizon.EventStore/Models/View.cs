@@ -1,6 +1,7 @@
 ﻿using System;
-using Insperex.EventHorizon.Abstractions.Compression;
 using Insperex.EventHorizon.Abstractions.Interfaces;
+using Insperex.EventHorizon.Abstractions.Serialization;
+using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 using Insperex.EventHorizon.EventStore.Interfaces;
 
 namespace Insperex.EventHorizon.EventStore.Models;

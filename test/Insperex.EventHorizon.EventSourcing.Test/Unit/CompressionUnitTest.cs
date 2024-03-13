@@ -1,8 +1,9 @@
 using System.Linq;
-using Insperex.EventHorizon.Abstractions.Compression;
 using Insperex.EventHorizon.Abstractions.Extensions;
 using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.Abstractions.Serialization;
+using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 using Xunit;
 
 namespace Insperex.EventHorizon.EventSourcing.Test.Unit

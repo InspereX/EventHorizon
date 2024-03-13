@@ -1,7 +1,7 @@
 using System.IO;
 using System.IO.Compression;
 
-namespace Insperex.EventHorizon.Abstractions.Compression
+namespace Insperex.EventHorizon.Abstractions.Serialization.Compression
 {
     public class GzipCompression : ICompression
     {
