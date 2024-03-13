@@ -124,6 +124,7 @@ public class Sender<TState> where TState : IState
         if (!_publisherDict.ContainsKey(topic))
             _publisherDict[topic] = _provider.GetRequiredService<StreamingClient>()
                 .CreatePublisher<TMessage>()
+                .AddCompression(_config.Compression)
                 .AddTopic(topic)
                 .Build();
 
