@@ -6,7 +6,7 @@ using Insperex.EventHorizon.EventStore.Interfaces;
 
 namespace Insperex.EventHorizon.EventStore.Models;
 
-public class View<T> : IStateParent<T>, ICompressible<T>
+public class View<T> : IStateParent<T>
     where T : class, IState
 {
     public View()

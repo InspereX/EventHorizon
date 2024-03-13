@@ -10,6 +10,8 @@ using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
+using Insperex.EventHorizon.Abstractions.Serialization.Compression;
+using Insperex.EventHorizon.Abstractions.Serialization.Compression.Extensions;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStreaming;
@@ -21,13 +23,14 @@ namespace Insperex.EventHorizon.EventSourcing.Aggregates;
 
 public class Aggregator<TParent, TState>
     where TParent : IStateParent<TState>, new()
-    where TState : IState
+    where TState : class, IState
 {
     private readonly Type _stateType = typeof(TState);
     private readonly string _stateTypeName = typeof(TState).Name;
     private readonly ICrudStore<TParent> _crudStore;
     private readonly ILogger<Aggregator<TParent, TState>> _logger;
     private readonly StreamingClient _streamingClient;
+    private readonly AggregatorConfig<TState> _config;
     private readonly Dictionary<string, object> _publisherDict = new();
     private readonly string _eventTopic;
 
@@ -35,10 +38,12 @@ public class Aggregator<TParent, TState>
         ICrudStore<TParent> crudStore,
         StreamingClient streamingClient,
         Formatter formatter,
+        AggregatorConfig<TState> config,
         ILogger<Aggregator<TParent, TState>> logger)
     {
         _crudStore = crudStore;
         _streamingClient = streamingClient;
+        _config = config;
         _eventTopic = formatter.GetTopic<Event>(_stateType);
         _logger = logger;
     }
@@ -80,6 +85,11 @@ public class Aggregator<TParent, TState>
                     UpdatedDate = x.UpdatedDate
                 })
                 .ToArray();
+
+            // Compress
+            if(_config.CompressionType != null)
+                foreach (var parent in parents)
+                    parent.Compress(_config.CompressionType);
 
             if (parents.Any() != true)
                 return;
@@ -168,11 +178,11 @@ public class Aggregator<TParent, TState>
 
     public async Task<Aggregate<TState>> GetAggregateFromStateAsync(string streamId, CancellationToken ct)
     {
-        var result = await GetAggregatesFromStateAsync(new[] { streamId }, ct);
+        var result = await GetAggregatesFromStatesAsync(new[] { streamId }, ct);
         return result.Values.FirstOrDefault();
     }
 
-    public async Task<Dictionary<string, Aggregate<TState>>> GetAggregatesFromStateAsync(string[] streamIds, CancellationToken ct)
+    public async Task<Dictionary<string, Aggregate<TState>>> GetAggregatesFromStatesAsync(string[] streamIds, CancellationToken ct)
     {
         try
         {

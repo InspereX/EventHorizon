@@ -39,7 +39,7 @@ public class WorkflowService<TWrapper, TState, TMessage>
         {
             // Load Aggregate
             var streamIds = messages.Select(x => x.StreamId).Distinct().ToArray();
-            var aggregateDict = await _aggregator.GetAggregatesFromStateAsync(streamIds, ct);
+            var aggregateDict = await _aggregator.GetAggregatesFromStatesAsync(streamIds, ct);
 
             // OnLoad Hook
             SafeHook(() => _middleware?.OnLoad(aggregateDict), aggregateDict);

@@ -1,23 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Net;
-using System.Reflection;
-using Insperex.EventHorizon.Abstractions.Extensions;
 using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
-using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Reflection;
 using Insperex.EventHorizon.EventStore.Interfaces;
-using Insperex.EventHorizon.EventStore.Models;
 
 namespace Insperex.EventHorizon.EventSourcing.Aggregates;
 
 public class Aggregate<T>
-    where T : IState
+    where T : class, IState
 {
     private static readonly Type Type = typeof(T);
     private static readonly StateDetail StateDetail = ReflectionFactory.GetStateDetail(Type);

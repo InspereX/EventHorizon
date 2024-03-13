@@ -1,8 +1,8 @@
 using System.Text;
 
-namespace Insperex.EventHorizon.Abstractions.Serialization.Compression
+namespace Insperex.EventHorizon.Abstractions.Serialization.Compression.Extensions
 {
-    public static class CompressionExtensions
+    public static class CompressibleExtensions
     {
         public static void Compress<T>(this ICompressible<T> compressible, CompressionType? compressionType) where T : class
         {

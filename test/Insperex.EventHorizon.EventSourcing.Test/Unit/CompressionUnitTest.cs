@@ -4,6 +4,7 @@ using Insperex.EventHorizon.Abstractions.Interfaces.Actions;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 using Insperex.EventHorizon.Abstractions.Serialization;
 using Insperex.EventHorizon.Abstractions.Serialization.Compression;
+using Insperex.EventHorizon.Abstractions.Serialization.Compression.Extensions;
 using Xunit;
 
 namespace Insperex.EventHorizon.EventSourcing.Test.Unit

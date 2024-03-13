@@ -1,11 +1,10 @@
 ﻿using System;
-using Insperex.EventHorizon.Abstractions.Serialization;
 using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 using Insperex.EventHorizon.EventStore.Interfaces;
 
 namespace Insperex.EventHorizon.EventStore.Models;
 
-public class Snapshot<T> : IStateParent<T>, ICompressible<T> where T : class
+public class Snapshot<T> : IStateParent<T> where T : class
 {
     public Snapshot()
     {

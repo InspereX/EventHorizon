@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Insperex.EventHorizon.EventSourcing.AggregateWorkflows
 {
     public class WorkflowConfigurator<TState>
-        where TState : IState
+        where TState : class, IState
     {
         private readonly IServiceProvider _provider;
         internal int? BatchSize { get; set; }
