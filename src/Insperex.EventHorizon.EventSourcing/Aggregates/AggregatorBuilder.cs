@@ -28,7 +28,8 @@ public class AggregatorBuilder<TParent, T>
     private bool _isValidationEnabled = true;
     private readonly LockFactory<T> _lockFactory;
     private readonly ILogger<AggregatorBuilder<TParent, T>> _logger;
-    private CompressionType? _compressionType;
+    private CompressionType? _stateCompression;
+    private CompressionType _eventCompression;
 
     public AggregatorBuilder(
         IServiceProvider provider,
@@ -52,9 +53,15 @@ public class AggregatorBuilder<TParent, T>
         return this;
     }
 
-    public AggregatorBuilder<TParent, T> Compression(CompressionType compressionType)
+    public AggregatorBuilder<TParent, T> StateCompression(CompressionType stateCompression)
     {
-        _compressionType = compressionType;
+        _stateCompression = stateCompression;
+        return this;
+    }
+
+    public AggregatorBuilder<TParent, T> EventCompression(CompressionType eventCompression)
+    {
+        _eventCompression = eventCompression;
         return this;
     }
 
@@ -63,7 +70,8 @@ public class AggregatorBuilder<TParent, T>
         var config = new AggregatorConfig<T>
         {
             IsValidationEnabled = _isValidationEnabled,
-            CompressionType = _compressionType,
+            StateCompression = _stateCompression,
+            EventCompression = _eventCompression
         };
 
         // Create Store

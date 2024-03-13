@@ -5,7 +5,7 @@ using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 
 namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 
-public class Response : ITopicMessage, ICompressible<string>
+public class Response : ITopicMessage
 {
     public string Id { get; set; }
     public string Topic { get; set; }

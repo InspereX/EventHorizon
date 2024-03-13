@@ -10,13 +10,11 @@ using Insperex.EventHorizon.Abstractions.Interfaces;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
 using Insperex.EventHorizon.Abstractions.Models;
 using Insperex.EventHorizon.Abstractions.Models.TopicMessages;
-using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 using Insperex.EventHorizon.Abstractions.Serialization.Compression.Extensions;
 using Insperex.EventHorizon.EventStore.Interfaces;
 using Insperex.EventHorizon.EventStore.Interfaces.Stores;
 using Insperex.EventHorizon.EventStreaming;
 using Insperex.EventHorizon.EventStreaming.Publishers;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Insperex.EventHorizon.EventSourcing.Aggregates;
@@ -80,19 +78,19 @@ public class Aggregator<TParent, TState>
                 {
                     Id = x.Id,
                     SequenceId = x.SequenceId,
-                    Payload = x.State,
+                    Payload = x.Payload,
                     CreatedDate = x.CreatedDate,
                     UpdatedDate = x.UpdatedDate
                 })
                 .ToArray();
 
-            // Compress
-            if(_config.CompressionType != null)
-                foreach (var parent in parents)
-                    parent.Compress(_config.CompressionType);
-
             if (parents.Any() != true)
                 return;
+
+            // Compress
+            if(_config.StateCompression != null)
+                foreach (var parent in parents)
+                    parent.Compress(_config.StateCompression);
 
             var results = await _crudStore.UpsertAllAsync(parents, CancellationToken.None);
             foreach (var id in results.FailedIds)
@@ -158,7 +156,7 @@ public class Aggregator<TParent, TState>
         where TMessage : class, ITopicMessage
     {
         if (!_publisherDict.ContainsKey(topic))
-            _publisherDict[topic] = _streamingClient.CreatePublisher<TMessage>().AddTopic(topic).Build();
+            _publisherDict[topic] = _streamingClient.CreatePublisher<TMessage>().AddTopic(topic).AddCompression(_config.EventCompression).Build();
         return _publisherDict[topic] as Publisher<TMessage>;
     }
 
@@ -191,6 +189,10 @@ public class Aggregator<TParent, TState>
             streamIds = streamIds.Distinct().ToArray();
             var snapshots = await _crudStore.GetAllAsync(streamIds, ct);
             var parentDict = snapshots.ToDictionary(x => x.Id);
+
+            // Decompress
+            foreach(var snapshot in snapshots)
+                snapshot.Decompress();
 
             // Build Aggregate Dict
             var aggregateDict = streamIds

@@ -25,7 +25,7 @@ public class Aggregate<T>
     public bool IsDirty { get; private set; }
     public string Id { get; set; }
     public long SequenceId { get; set; }
-    public T State { get; set; }
+    public T Payload { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime UpdatedDate { get; set; }
 
@@ -40,7 +40,7 @@ public class Aggregate<T>
     {
         Id = model.Id;
         SequenceId = model.SequenceId;
-        State = model.Payload;
+        Payload = model.Payload;
         CreatedDate = model.CreatedDate;
         UpdatedDate = model.UpdatedDate;
         Setup();
@@ -127,21 +127,21 @@ public class Aggregate<T>
     private void Setup()
     {
         // Initialize Data
-        State ??= Activator.CreateInstance<T>();
-        State.Id = Id;
+        Payload ??= Activator.CreateInstance<T>();
+        Payload.Id = Id;
         var properties = StateDetail.PropertiesWithStates;
         AllStates = properties
             .ToDictionary(x => x.PropertyType, x =>
             {
-                var value = x.GetValue(State);
+                var value = x.GetValue(Payload);
                 if (value != null) return value;
 
                 var state = Activator.CreateInstance(x.PropertyType);
                 ((dynamic)state)!.Id = Id;
-                x.SetValue(State, state);
+                x.SetValue(Payload, state);
                 return state;
             });
-        AllStates[Type] = State;
+        AllStates[Type] = Payload;
     }
 
     public bool Exists() => SequenceId > 0;

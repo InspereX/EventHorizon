@@ -7,7 +7,7 @@ using Insperex.EventHorizon.Abstractions.Util;
 
 namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 
-public class Command : ITopicMessage, ICompressible<string>
+public class Command : ITopicMessage
 {
     public string Id { get; set; }
     public string StreamId { get; set; }

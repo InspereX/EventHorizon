@@ -6,7 +6,7 @@ using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 
 namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 
-public class Request : ITopicMessage, ICompressible<string>
+public class Request : ITopicMessage
 {
     public string Id { get; set; }
     public string StreamId { get; set; }

@@ -1,12 +1,11 @@
 using System;
 using System.Text.Json;
 using Insperex.EventHorizon.Abstractions.Interfaces.Internal;
-using Insperex.EventHorizon.Abstractions.Serialization;
 using Insperex.EventHorizon.Abstractions.Serialization.Compression;
 
 namespace Insperex.EventHorizon.Abstractions.Models.TopicMessages;
 
-public class Event : ITopicMessage, ICompressible<string>
+public class Event : ITopicMessage
 {
     public long SequenceId { get; set; }
     public string StreamId { get; set; }
