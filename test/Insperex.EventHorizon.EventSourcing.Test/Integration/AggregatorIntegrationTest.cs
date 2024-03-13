@@ -42,7 +42,7 @@ public class AggregatorIntegrationTest : IAsyncLifetime
     private readonly EventSourcingClient<Account> _eventSourcingClient;
     private readonly HandleAndApplyEventsWorkflow<Snapshot<User>, User, Command> _userCommandWorkflow;
     private readonly ApplyEventsWorkflow<View<Account>, Account> _accountApplyEventWorkflow;
-    private readonly Store<Snapshot<Account>, Account> _accountViewStore;
+    private readonly Store<View<Account>, Account> _accountViewStore;
 
     public AggregatorIntegrationTest(ITestOutputHelper output)
     {
