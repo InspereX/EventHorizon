@@ -6,7 +6,7 @@ namespace Insperex.EventHorizon.Abstractions.Serialization
 {
     public static class SerializationConstants
     {
-        public static readonly ISerializer Serializer = new NewtonsoftJsonSerializer();
+        public static readonly ISerializer Serializer = new SystemJsonSerializer();
 
         public static readonly Dictionary<CompressionType, ICompression> CompressionDict = new();
 
