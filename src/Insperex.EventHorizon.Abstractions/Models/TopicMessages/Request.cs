@@ -12,7 +12,7 @@ public class Request : ITopicMessage
     public string StreamId { get; set; }
     public string Type { get; set; }
     public string Payload { get; set; }
-    public Compression? CompressionType { get; set; }
+    public Compression? Compression { get; set; }
     public byte[] Data { get; set; }
     public string ResponseTopic { get; set; }
 

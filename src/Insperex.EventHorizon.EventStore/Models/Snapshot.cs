@@ -36,7 +36,7 @@ public class Snapshot<T> : IStateParent<T> where T : class
     public string Id { get; set; }
     public long SequenceId { get; set; }
     public T Payload { get; set; }
-    public Compression? CompressionType { get; set; }
+    public Compression? Compression { get; set; }
     public byte[] Data { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime UpdatedDate { get; set; }

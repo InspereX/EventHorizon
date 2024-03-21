@@ -20,7 +20,7 @@ namespace Insperex.EventHorizon.EventSourcing.Test.Unit
 
             // Assert
             Assert.Null(@event.Payload);
-            Assert.NotNull(@event.CompressionType);
+            Assert.NotNull(@event.Compression);
             Assert.NotNull(@event.Data);
         }
 
@@ -37,7 +37,7 @@ namespace Insperex.EventHorizon.EventSourcing.Test.Unit
             var types = new [] { typeof(ExampleEvent) };
             var entity = @event.GetPayload(types.ToDictionary(x => x.Name)) as ExampleEvent;
             Assert.NotNull(@event.Payload);
-            Assert.Null(@event.CompressionType);
+            Assert.Null(@event.Compression);
             Assert.Null(@event.Data);
             Assert.Equal("Name", entity.Name);
         }

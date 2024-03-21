@@ -6,7 +6,7 @@ namespace Insperex.EventHorizon.Abstractions.Serialization.Compression.Extension
     {
         public static void Compress<T>(this ICompressible<T> compressible, Compression? compressionType) where T : class
         {
-            if (compressionType == null || compressible.CompressionType != null)
+            if (compressionType == null || compressible.Compression != null)
                 return;
 
             // Serialize
@@ -19,18 +19,18 @@ namespace Insperex.EventHorizon.Abstractions.Serialization.Compression.Extension
             var bytes = Encoding.UTF8.GetBytes(json);
 
             // Set Fields
-            compressible.CompressionType = compressionType;
+            compressible.Compression = compressionType;
             compressible.Data = compressor.Compress(bytes);
             compressible.Payload = null;
         }
 
         public static void Decompress<T>(this ICompressible<T> compressible) where T : class
         {
-            if (compressible.CompressionType == null)
+            if (compressible.Compression == null)
                 return;
 
             // Decompress
-            var compressor = SerializationConstants.CompressionDict[compressible.CompressionType.Value];
+            var compressor = SerializationConstants.CompressionDict[compressible.Compression.Value];
             var bytes = compressor.Decompress(compressible.Data);
             var json = Encoding.UTF8.GetString(bytes);
 
@@ -40,7 +40,7 @@ namespace Insperex.EventHorizon.Abstractions.Serialization.Compression.Extension
                 : json as T;
 
             // Set Fields
-            compressible.CompressionType = null;
+            compressible.Compression = null;
             compressible.Data = null;
         }
     }
