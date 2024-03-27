@@ -15,7 +15,7 @@ namespace Insperex.EventHorizon.Abstractions.Serialization.Compression.Extension
                 : compressible.Payload as string;
 
             // Compress
-            var compressor = SerializationConstants.CompressionDict[compressionType.Value];
+            var compressor = SerializationConstants.CompressorsByKey[compressionType.Value];
             var bytes = Encoding.UTF8.GetBytes(json);
 
             // Set Fields
@@ -30,7 +30,7 @@ namespace Insperex.EventHorizon.Abstractions.Serialization.Compression.Extension
                 return;
 
             // Decompress
-            var compressor = SerializationConstants.CompressionDict[compressible.Compression.Value];
+            var compressor = SerializationConstants.CompressorsByKey[compressible.Compression.Value];
             var bytes = compressor.Decompress(compressible.Data);
             var json = Encoding.UTF8.GetString(bytes);
 
